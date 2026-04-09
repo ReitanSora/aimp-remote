@@ -3,6 +3,7 @@ import { PlaylistItem } from '@/components/playlist/playlistSongItem';
 import TogglePlayer from '@/components/playlist/togglePlayer';
 import { Drawer, DrawerBackground } from '@/components/ui/drawerNavigation';
 import Header from '@/components/ui/header';
+import { useSettings } from '@/context/appContext';
 import { PlaylistInfoProps, PlaylistStatsProps } from '@/types/IPlaylistDetails';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
@@ -22,6 +23,7 @@ export default function Playlist() {
     const insets = useSafeAreaInsets();
     const transition = useSharedValue(0);
     const { id } = useLocalSearchParams();
+    const { server } = useSettings();
 
     const filteredData = useMemo(() => {
         if (!playlistItems) return [];
@@ -36,7 +38,7 @@ export default function Playlist() {
 
     const handlePlayItem = async (index: string) => {
         try {
-            const response = await fetch(`http://192.168.1.9:3553/playlist/play?id=${id}&index=${index}`);
+            const response = await fetch(`http://${server.ip}:3553/playlist/play?id=${id}&index=${index}`);
             await response.json();
         } catch (error) {
             console.log('Error play item', error);
@@ -54,11 +56,11 @@ export default function Playlist() {
 
         const playlistInfo = async () => {
             try {
-                const infoResponse = await fetch(`http://192.168.1.9:3553/playlist/info?id=${id}`);
+                const infoResponse = await fetch(`http://${server.ip}:3553/playlist/info?id=${id}`);
                 const infoData = await infoResponse.json();
                 setPlaylistInfo(infoData);
 
-                const statsResponse = await fetch(`http://192.168.1.9:3553/playlist/stats?id=${id}`);
+                const statsResponse = await fetch(`http://${server.ip}:3553/playlist/stats?id=${id}`);
                 const statsData = await statsResponse.json();
                 setPlaylistStats(statsData);
             } catch (error) {
@@ -68,7 +70,7 @@ export default function Playlist() {
 
         const playlistItems = async () => {
             try {
-                const response = await fetch(`http://192.168.1.9:3553/playlist/items?id=${id}`);
+                const response = await fetch(`http://${server.ip}:3553/playlist/items?id=${id}`);
                 const data = await response.json();
                 setPlaylistItems(data);
             } catch (error) {
@@ -78,7 +80,7 @@ export default function Playlist() {
 
         const currentPlaylist = async () => {
             try {
-                const response = await fetch(`http://192.168.1.9:3553/playlist/current`);
+                const response = await fetch(`http://${server.ip}:3553/playlist/current`);
                 const data = await response.json();
                 setCurrentPlaylist(data.id);
             } catch (error) {
@@ -90,7 +92,7 @@ export default function Playlist() {
         playlistItems();
         currentPlaylist();
         setIsLoading(false);
-    }, [id])
+    }, [id, server])
 
     return (
         <>
