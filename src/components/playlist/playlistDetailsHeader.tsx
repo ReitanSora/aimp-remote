@@ -1,7 +1,6 @@
 import { useSettings } from '@/context/appContext';
 import { PlaylistDetailsHeaderProps } from '@/types/IPlaylistDetails';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -26,8 +25,6 @@ export default function PlaylistDetailsHeader({ playlistInfo, playlistStats }: P
             parts.push(`${minutes} ${minutes === 1 ? 'min' : 'mins'}`);
         }
 
-        // Solo mostramos segundos si no hay horas, 
-        // o si quieres precisión total puedes quitar el "if"
         if (seconds > 0 && hours === 0) {
             parts.push(`${seconds} ${'s'}`);
         }
@@ -54,10 +51,13 @@ export default function PlaylistDetailsHeader({ playlistInfo, playlistStats }: P
 
     return (
         <View style={styles.playlistInfo}>
-            <LinearGradient
-                // Background Linear Gradient
-                colors={[appColor, 'transparent']}
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: 250 }}
+            <View
+                style={[
+                    styles.gradientBox,
+                    {
+                        experimental_backgroundImage: `linear-gradient(180deg, ${appColor} , transparent)`
+                    }
+                ]}
             />
             <Text style={[styles.infoText, { color: '#FFF', fontSize: 24, fontFamily: 'MPLUS-ExtraBold' }]}>{playlistInfo?.name}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -120,6 +120,15 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         justifyContent: 'flex-end',
         gap: 40,
+    },
+    gradientBox: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+
+        height: 250,
     },
     info: {
         height: 40,
