@@ -2,7 +2,7 @@
   "expo": {
     "name": "AIMP Remote Control",
     "slug": "aimp-remote",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icons/adaptive-icon-color.png",
     "scheme": "aimpremote",
@@ -42,7 +42,13 @@
       [
         "expo-font",
         {
-          "fonts": ["./assets/fonts/MPLUS-Bold.ttf", "./assets/fonts/MPLUS-ExtraBold.ttf", "./assets/fonts/MPLUS-Regular.ttf", "./assets/fonts/MPLUS-Medium.ttf", "./assets/fonts/MPLUS-Thin.ttf"]
+          "fonts": [
+            "./assets/fonts/MPLUS-Bold.ttf",
+            "./assets/fonts/MPLUS-ExtraBold.ttf",
+            "./assets/fonts/MPLUS-Regular.ttf",
+            "./assets/fonts/MPLUS-Medium.ttf",
+            "./assets/fonts/MPLUS-Thin.ttf"
+          ]
         }
       ],
       [
@@ -63,6 +69,12 @@
       "eas": {
         "projectId": "cca8de19-da90-4dff-bdec-f261cd0abbda"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cca8de19-da90-4dff-bdec-f261cd0abbda"
     }
   }
 }
