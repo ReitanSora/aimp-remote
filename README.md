@@ -70,7 +70,7 @@ This app requires the **AIMP Web Control Plugin** running on your PC. The plugin
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/player/state` | GET | Get player state (playing/paused/stopped) |
+| `/playerstate` | GET | Get player state (playing/paused/stopped) |
 | `/playpause` | GET | Toggle play/pause |
 | `/next` | GET | Skip to next track |
 | `/previous` | GET | Go to previous track |
@@ -88,8 +88,8 @@ This app requires the **AIMP Web Control Plugin** running on your PC. The plugin
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/repeat` | GET | Get repeat mode (off/track/playlist) |
-| `/repeat` | POST | Set repeat mode |
+| `/track/repeat` | GET | Get repeat mode |
+| `/track/repeat` | POST | Set repeat mode |
 | `/shuffle` | GET | Get shuffle state |
 | `/shuffle` | POST | Toggle shuffle on/off |
 
