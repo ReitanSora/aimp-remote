@@ -8,12 +8,12 @@ It includes real-time playback updates, playlist browsing, now playing controls,
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-| Home | Player | Extra Info |
-| :---: | :---: | :---: |
+|                                           Home                                           |                                           Player                                           |                                           Extra Info                                           |
+| :--------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
 | ![Home](https://github.com/user-attachments/assets/214523d4-9677-44c7-8fcb-57cfd67f07c2) | ![Player](https://github.com/user-attachments/assets/d94276e6-2820-4187-94c0-4fc3679947bd) | ![Extra Info](https://github.com/user-attachments/assets/11bf50d7-a6b7-4aa9-a03d-7c7edc37a9a2) |
 
-| Settings | Playlist Details |
-| :---: | :---: |
+|                                           Settings                                           |                                           Playlist Details                                           |
+| :------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------: |
 | ![Settings](https://github.com/user-attachments/assets/2813abbd-a7e6-4a0f-a463-0656fef92fd6) | ![Playlist Details](https://github.com/user-attachments/assets/c0dcf099-6cbc-4b21-8c16-ade8955dd2fc) |
 
 ## ✨ Features
@@ -58,51 +58,51 @@ This app requires the **AIMP Web Control Plugin** running on your PC. The plugin
 
 #### 🎵 Track Information
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/track/info` | GET | Get current track metadata (title, artist, album, etc.) |
-| `/track/cover` | GET | Get album artwork for current track |
-| `/track/position` | GET | Get current playback position |
-| `/track/position` | POST | Set playback position (seek) |
-| `/track/duration` | GET | Get track duration |
+| Endpoint          | Method | Description                                             |
+| ----------------- | ------ | ------------------------------------------------------- |
+| `/track/info`     | GET    | Get current track metadata (title, artist, album, etc.) |
+| `/track/cover`    | GET    | Get album artwork for current track                     |
+| `/track/position` | GET    | Get current playback position                           |
+| `/track/position` | POST   | Set playback position (seek)                            |
+| `/track/duration` | GET    | Get track duration                                      |
 
 #### ▶️ Player Controls
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/playerstate` | GET | Get player state (playing/paused/stopped) |
-| `/playpause` | GET | Toggle play/pause |
-| `/next` | GET | Skip to next track |
-| `/previous` | GET | Go to previous track |
+| Endpoint       | Method | Description                               |
+| -------------- | ------ | ----------------------------------------- |
+| `/playerstate` | GET    | Get player state (playing/paused/stopped) |
+| `/playpause`   | GET    | Toggle play/pause                         |
+| `/next`        | GET    | Skip to next track                        |
+| `/previous`    | GET    | Go to previous track                      |
 
 #### 🔊 Audio Controls
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/volume` | GET | Get current volume level |
-| `/volume` | POST | Set volume level |
-| `/mute` | GET | Get mute state |
-| `/mute` | POST | Toggle mute on/off |
+| Endpoint  | Method | Description              |
+| --------- | ------ | ------------------------ |
+| `/volume` | GET    | Get current volume level |
+| `/volume` | POST   | Set volume level         |
+| `/mute`   | GET    | Get mute state           |
+| `/mute`   | POST   | Toggle mute on/off       |
 
 #### 🔀 Playback Modes
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/track/repeat` | GET | Get repeat mode |
-| `/track/repeat` | POST | Set repeat mode |
-| `/shuffle` | GET | Get shuffle state |
-| `/shuffle` | POST | Toggle shuffle on/off |
+| Endpoint        | Method | Description           |
+| --------------- | ------ | --------------------- |
+| `/track/repeat` | GET    | Get repeat mode       |
+| `/track/repeat` | POST   | Set repeat mode       |
+| `/shuffle`      | GET    | Get shuffle state     |
+| `/shuffle`      | POST   | Toggle shuffle on/off |
 
 #### 📋 Playlists
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/playlist` | GET | Get all playlists |
-| `/playlist/current` | GET | Get currently active playlist |
-| `/playlist/items` | GET | Get tracks from a specific playlist |
-| `/playlist/info` | GET | Get basic playlist information |
-| `/playlist/stats` | GET | Get playlist statistics |
-| `/playlist/play` | GET | Play a specific track from playlist |
+| Endpoint            | Method | Description                         |
+| ------------------- | ------ | ----------------------------------- |
+| `/playlist`         | GET    | Get all playlists                   |
+| `/playlist/current` | GET    | Get currently active playlist       |
+| `/playlist/items`   | GET    | Get tracks from a specific playlist |
+| `/playlist/info`    | GET    | Get basic playlist information      |
+| `/playlist/stats`   | GET    | Get playlist statistics             |
+| `/playlist/play`    | GET    | Play a specific track from playlist |
 
 #### 🔌 WebSocket Events
 
@@ -127,17 +127,20 @@ Connect to `ws://<server-ip>:3554` for real-time updates:
 ## 🚀 Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/aimp-remote.git
    cd aimp-remote
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Start the app:
+
    ```bash
    npm run start
    ```
@@ -244,6 +247,7 @@ Current communication is **LAN-oriented** and uses HTTP/WebSocket without encryp
 ⚠️ **Not recommended for production or internet-facing deployments**
 
 For non-local or production-grade scenarios, consider:
+
 - Implementing HTTPS/WSS with valid certificates
 - Adding authentication (API keys, OAuth)
 - Implementing rate limiting
