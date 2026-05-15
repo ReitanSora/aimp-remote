@@ -1,54 +1,67 @@
-import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { SettingsProvider, useSettings } from '@/context/appContext';
+import { Colors } from '@/theme';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Href, Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from "react";
-import { SettingsProvider, useSettings } from "../context/appContext";
+import { useEffect } from 'react';
 
 SplashScreen.preventAutoHideAsync();
 
-SplashScreen.setOptions({
-    duration: 400,
-    fade: true,
-});
-
 function RootLayoutNav() {
+  const { isLoaded, server, theme } = useSettings();
+  const router = useRouter();
+  const segments = useSegments();
+  const currentThemeColors = Colors[theme];
 
-    const { isLoaded } = useSettings();
+  const MyTheme = {
+    ...DefaultTheme,
+    dark: theme === 'dark',
+    colors: {
+      ...DefaultTheme.colors,
+      primary: currentThemeColors.primary,
+      background: currentThemeColors.background,
+      card: currentThemeColors.surface,
+      text: currentThemeColors.text,
+      border: currentThemeColors.border,
+      notification: currentThemeColors.primary,
+    },
+  };
 
-    const MyTheme = {
-        ...DefaultTheme,
-        colors: {
-            ...DefaultTheme.colors,
-            background: '#000'
-        },
-    };
+  useEffect(() => {
+    if (!isLoaded) return;
 
-    useEffect(() => {
-        if (isLoaded) {
-            SplashScreen.hideAsync();
-        }
-    }, [isLoaded])
-
-    if (!isLoaded) {
-        return null;
+    const isConnectScreen = String(segments[0]) === 'connect';
+    if (!server.ip && !isConnectScreen) {
+      router.replace('/connect' as Href);
     }
+    SplashScreen.hideAsync();
+  }, [isLoaded, server.ip, segments, router]);
 
-    return (
-        <ThemeProvider value={MyTheme}>
-            <Stack>
-                <Stack.Screen name="index" options={{ headerShown: false, animation: 'simple_push' }}></Stack.Screen>
-                <Stack.Screen name="playlist/[id]" options={{ headerShown: false, }}></Stack.Screen>
-                <Stack.Screen name="(player)" options={{ headerShown: false, animation: 'slide_from_bottom' }}></Stack.Screen>
-                <Stack.Screen name="settings/index" options={{ headerShown: false }}></Stack.Screen>
-            </Stack>
-        </ThemeProvider>
-    )
-};
+  if (!isLoaded) return null;
+
+  return (
+    <ThemeProvider value={MyTheme}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade_from_bottom',
+          contentStyle: { backgroundColor: currentThemeColors.background },
+        }}
+      >
+        <Stack.Screen name="connect" options={{ animation: 'fade' }} />
+        <Stack.Screen name="index" />
+        <Stack.Screen name="playlist/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="(player)" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="settings/index" options={{ animation: 'slide_from_right' }} />
+      </Stack>
+    </ThemeProvider>
+  );
+}
 
 export default function HomeLayout() {
-    return (
-        <SettingsProvider>
-            <RootLayoutNav />
-        </SettingsProvider>
-    )
+  return (
+    <SettingsProvider>
+      <RootLayoutNav />
+    </SettingsProvider>
+  );
 }
