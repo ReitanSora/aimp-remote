@@ -1,7 +1,6 @@
 import { useSettings } from '@/context/appContext';
 import { SongInterface } from '@/types/ISongInformation';
 import { useEffect, useRef, useState } from 'react';
-import { ToastAndroid } from 'react-native';
 
 export interface AIMPState {
   muteState: boolean | null;
@@ -15,7 +14,7 @@ export interface AIMPState {
 }
 
 export const useAIMP = () => {
-  const [aimpEvent, setAimpEvent] = useState({
+  const [aimpEvent, setAimpEvent] = useState<AIMPState>({
     muteState: null,
     playerState: null,
     position: 0,
@@ -41,10 +40,6 @@ export const useAIMP = () => {
 
   const { server } = useSettings();
 
-  const showToast = (message: string) => {
-    ToastAndroid.show(message, ToastAndroid.SHORT);
-  };
-
   useEffect(() => {
     if (!server || !server.ip) return;
 
@@ -55,25 +50,54 @@ export const useAIMP = () => {
     ws.current.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
-        setAimpEvent((prev) => ({
-          ...prev,
-          ...(data.event === 'mute_changed' && { muteState: data.mute }),
-          ...(data.event === 'player_state' && { playerState: data.state }),
-          ...(data.event === 'position' && { position: data.position }),
-          ...(data.event === 'repeat_changed' && { repeatState: data.repeat }),
-          ...(data.event === 'shuffle_changed' && {
-            shuffleState: data.shuffle,
-          }),
-          ...(data.event === 'track_changed' && { track: data }),
-          ...(data.event === 'volume_changed' && { volumeState: data.volume }),
-        }));
+
+        setAimpEvent((prev) => {
+          let changed = false;
+          const next = { ...prev };
+
+          if (data.event === 'mute_changed' && prev.muteState !== data.mute) {
+            next.muteState = data.mute;
+            changed = true;
+          }
+          if (data.event === 'player_state' && prev.playerState !== data.state) {
+            next.playerState = data.state;
+            changed = true;
+          }
+
+          if (data.event === 'position') {
+            const newPos = Math.floor(data.position);
+            const oldPos = Math.floor(prev.position);
+            if (newPos !== oldPos) {
+              next.position = data.position;
+              changed = true;
+            }
+          }
+
+          if (data.event === 'repeat_changed' && prev.repeatState !== data.repeat) {
+            next.repeatState = data.repeat;
+            changed = true;
+          }
+          if (data.event === 'shuffle_changed' && prev.shuffleState !== data.shuffle) {
+            next.shuffleState = data.shuffle;
+            changed = true;
+          }
+          if (data.event === 'track_changed') {
+            next.track = data;
+            changed = true;
+          }
+          if (data.event === 'volume_changed' && prev.volumeState !== data.volume) {
+            next.volumeState = data.volume;
+            changed = true;
+          }
+
+          return changed ? next : prev;
+        });
       } catch {
-        showToast('Error parsing websocket');
         console.warn('Error parsing websocket');
       }
     };
 
-    ws.current.onerror = (e) => setAimpEvent((prev) => ({ ...prev, status: 'disconnected' }));
+    ws.current.onerror = () => setAimpEvent((prev) => ({ ...prev, status: 'disconnected' }));
 
     return () => {
       if (ws.current) {
