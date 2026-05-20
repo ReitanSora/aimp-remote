@@ -29,7 +29,10 @@ export default function Playlist() {
     if (!playlistItems) return [];
     if (!searchValue.trim()) return playlistItems;
 
-    return playlistItems.filter((song) => song.title?.toUpperCase().includes(searchValue.toUpperCase()));
+    return playlistItems.filter((song) => {
+      const displayTitle = song.title || song.name || (song.filename ? song.filename.split('\\').pop()?.split('/').pop() : 'Unknown');
+      return displayTitle?.toUpperCase().includes(searchValue.toUpperCase());
+    });
   }, [searchValue, playlistItems]);
 
   const handleShowDrawer = () => {
