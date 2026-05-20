@@ -1,5 +1,5 @@
 {
-  "editor.formatOnSave": false,
+  "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "never"
@@ -15,5 +15,6 @@
   },
   "[javascriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "files.eol": "\n"
 }

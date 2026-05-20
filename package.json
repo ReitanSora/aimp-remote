@@ -2,6 +2,7 @@
   "name": "aimp-remote",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "start": "expo start",
     "start:dev": "expo start --dev-client",
@@ -18,7 +19,8 @@
     "format:check": "prettier . --check",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run format:check",
-    "check:fix": "npm run lint -- --fix && npm run format"
+    "check:fix": "npm run lint -- --fix && npm run format",
+    "build-on-arch": "ts-node scripts/builder/remote-build.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -50,12 +52,14 @@
     "reanimated-color-picker": "^4.2.0"
   },
   "devDependencies": {
+    "@types/node": "^25.8.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "prettier": "^3.8.3",
+    "ts-node": "^10.9.2",
     "typescript": "~5.9.2"
   },
   "private": true
