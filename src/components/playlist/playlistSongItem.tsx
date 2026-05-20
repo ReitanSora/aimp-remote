@@ -4,6 +4,7 @@ import NormalButton from '../player/normalButton';
 import { PlaylistItemType } from '@/types/IPlaylistDetails';
 import { useSettings } from '@/context/appContext';
 import { Colors } from '@/theme';
+import { formatTimeHelper } from '@/utils/helpers';
 
 interface PlaylistItems {
   item: PlaylistItemType;
@@ -14,6 +15,8 @@ export const PlaylistItem = memo(
   function PlaylistItem({ item, onPress }: PlaylistItems) {
     const { theme } = useSettings();
     const currentTheme = Colors[theme];
+
+    const displayTitle = item.title || item.name || (item.filename ? item.filename.split('\\').pop()?.split('/').pop() : 'Unknown');
 
     return (
       <>
@@ -32,14 +35,14 @@ export const PlaylistItem = memo(
                 <Text style={[styles.playlistText, { color: currentTheme.textSecondary }]}>{Number(item.index) + 1}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.playlistText, { fontFamily: 'MPLUS-Bold', color: currentTheme.text }]} numberOfLines={1} ellipsizeMode="tail">
-                    {item.title}
+                    {displayTitle}
                   </Text>
                   <Text style={[styles.playlistText, { color: currentTheme.textSecondary, fontSize: 12 }]} numberOfLines={1} ellipsizeMode="tail">
-                    {item.artist}
+                    {item.artist || 'Unknown Artist'}
                   </Text>
                 </View>
               </View>
-              <Text style={[styles.playlistText, { color: currentTheme.textSecondary }]}>{new Date(item.duration * 1000).toISOString().slice(14, 19)}</Text>
+              <Text style={[styles.playlistText, { color: currentTheme.textSecondary }]}>{formatTimeHelper(item.duration * 1000)}</Text>
             </View>
           }
         />
@@ -53,30 +56,8 @@ export const PlaylistItem = memo(
 );
 
 const styles = StyleSheet.create({
-  playlistItem: {
-    width: '100%',
-
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 40,
-  },
-  leftSide: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  playlistText: {
-    color: '#FFF',
-    fontFamily: 'MPLUS-Regular',
-    fontSize: 14,
-  },
-  separator: {
-    width: '100%',
-    height: 1,
-    backgroundColor: '#252525',
-    marginTop: 10,
-  },
+  playlistItem: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 40 },
+  leftSide: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
+  playlistText: { fontFamily: 'MPLUS-Regular', fontSize: 14 },
+  separator: { width: '100%', height: 1, marginTop: 10 },
 });

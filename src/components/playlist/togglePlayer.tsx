@@ -92,6 +92,8 @@ export default function TogglePlayer() {
     playerState();
   }, [server]);
 
+  const displayTitle = songInfo.title || songInfo.name || (songInfo.filename ? songInfo.filename.split('\\').pop()?.split('/').pop() : 'Unknown');
+
   return (
     <View style={[styles.playerToggle, { backgroundColor: appColor }]}>
       <TouchableNativeFeedback background={TouchableNativeFeedback.Ripple('rgba(139, 139, 139, 0.5)', false)} useForeground onPress={() => router.navigate('/(player)')}>
@@ -102,7 +104,7 @@ export default function TogglePlayer() {
             </View>
             <View style={styles.songInfo}>
               <Text style={[styles.text, { fontFamily: 'MPLUS-Bold' }]} numberOfLines={1} ellipsizeMode="tail">
-                {songInfo.title}
+                {displayTitle}
               </Text>
               <Text
                 style={[
@@ -115,7 +117,7 @@ export default function TogglePlayer() {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {songInfo.artist}
+                {songInfo.artist || 'Unknown Artist'}
               </Text>
             </View>
           </View>
