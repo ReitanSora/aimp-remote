@@ -12,7 +12,10 @@ import { Dimensions, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '../../context/appContext';
+import { formatTimeHelper } from '@/utils/helpers';
+
 const { height: screenHeight } = Dimensions.get('window');
+
 const defaultSong: SongInterface = {
   album: 'Unknown',
   artist: 'Unknown',
@@ -84,6 +87,7 @@ export default function Home() {
       if (data) setShuffleState(!shuffleState);
     } catch {
       showToast('Error set shuffle state');
+      console.warn('Error set shuffle state');
     }
   };
 
@@ -97,6 +101,7 @@ export default function Home() {
       if (data) setMuteState(!muteState);
     } catch {
       showToast('Error set mute state');
+      console.warn('Error set mute state');
     }
   };
 
@@ -112,24 +117,25 @@ export default function Home() {
       else if (volume > 0 && muteState) handleMuteState();
     } catch {
       showToast('Error set volume');
+      console.warn('Error set volume');
     }
   };
 
   const handleNextTrack = async () => {
     try {
-      const response = await fetch(`http://${server.ip}:3553/next`);
-      await response.json();
+      await fetch(`http://${server.ip}:3553/next`);
     } catch {
       showToast('Error next track');
+      console.warn('Error next track');
     }
   };
 
   const handlePreviousTrack = async () => {
     try {
-      const response = await fetch(`http://${server.ip}:3553/previous`);
-      await response.json();
+      await fetch(`http://${server.ip}:3553/previous`);
     } catch {
       showToast('Error previous track');
+      console.warn('Error previous track');
     }
   };
 
@@ -143,6 +149,7 @@ export default function Home() {
       }
     } catch {
       showToast('Error set play/pause state');
+      console.warn('Error set play/pause state');
     }
   };
 
@@ -151,16 +158,16 @@ export default function Home() {
     transition.value = withTiming(showSlider ? 0 : 1, { duration: 250 });
   };
 
-  const handleSongPosition = async (position: number) => {
+  const handleSongPosition = async (positionMillis: number) => {
     try {
-      const response = await fetch(`http://${server.ip}:3553/track/position`, {
+      setSongPosition(positionMillis);
+      await fetch(`http://${server.ip}:3553/track/position`, {
         method: 'POST',
-        body: JSON.stringify({ position: position }),
+        body: JSON.stringify({ position: positionMillis / 1000 }),
       });
-      const data = await response.json();
-      if (data) setSongPosition(position);
     } catch {
       showToast('Error set song position');
+      console.warn('Error set song position');
     }
   };
 
@@ -182,7 +189,7 @@ export default function Home() {
         const results = await Promise.allSettled(requests);
 
         if (results[0].status === 'fulfilled') setSongInfo(results[0].value);
-        if (results[1].status === 'fulfilled') setSongDuration(Number(results[1].value));
+        if (results[1].status === 'fulfilled') setSongDuration(Number(results[1].value) * 1000);
         if (results[2].status === 'fulfilled') setRepeatState(results[2].value === -1);
         if (results[3].status === 'fulfilled') setShuffleState(results[3].value === -1);
         if (results[4].status === 'fulfilled') setMuteState(results[4].value === 1);
@@ -191,7 +198,7 @@ export default function Home() {
 
         setImageUri(`http://${server.ip}:3553/track/cover?t=${new Date().getTime()}`);
       } catch (e) {
-        console.log('Error fetching states', e);
+        console.warn('Error fetching states', e);
       }
     };
 
@@ -224,11 +231,11 @@ export default function Home() {
   }, [aimpEvent.volumeState]);
 
   useEffect(() => {
-    if (aimpEvent.position !== 0) setSongPosition(Number(aimpEvent.position));
+    if (aimpEvent.position !== 0) setSongPosition(Math.trunc(Number(aimpEvent.position) * 1000));
   }, [aimpEvent.position]);
 
   useEffect(() => {
-    if (aimpEvent.track.album !== '') {
+    if (aimpEvent.track.title || aimpEvent.track.filename) {
       setSongInfo({
         album: aimpEvent.track.album,
         artist: aimpEvent.track.artist,
@@ -238,48 +245,26 @@ export default function Home() {
         rating: aimpEvent.track.rating,
         sample_rate: aimpEvent.track.sample_rate,
         title: aimpEvent.track.title,
+        name: aimpEvent.track.name,
+        filename: aimpEvent.track.filename,
       });
       setImageUri(`http://${server.ip}:3553/track/cover?t=${new Date().getTime()}`);
     }
   }, [aimpEvent.track, server.ip]);
 
   useEffect(() => {
-    if (Math.trunc(aimpEvent.track.duration * 1000) !== songDuration && aimpEvent.track.duration !== 0) {
+    if (aimpEvent.track.duration && Math.trunc(aimpEvent.track.duration * 1000) !== songDuration) {
       setSongDuration(Math.trunc(aimpEvent.track.duration * 1000));
     }
   }, [aimpEvent.track.duration, songDuration]);
 
+  const displayTitle = songInfo.title || songInfo.name || (songInfo.filename ? songInfo.filename.split('\\').pop()?.split('/').pop() : 'Unknown');
+
   return (
     <>
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <ImageBackground
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: screenHeight,
-          }}
-          source={{ uri: imageUri }}
-          transition={400}
-          cachePolicy={'none'}
-          placeholder={null}
-          recyclingKey={imageUri}
-        >
-          <BlurView
-            intensity={100}
-            tint="dark"
-            experimentalBlurMethod="dimezisBlurView"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: screenHeight,
-            }}
-          />
+        <ImageBackground style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }} source={{ uri: imageUri }} transition={400} cachePolicy={'none'} placeholder={null} recyclingKey={imageUri}>
+          <BlurView intensity={100} tint="dark" experimentalBlurMethod="dimezisBlurView" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }} />
         </ImageBackground>
         <View style={styles.header}>
           <NormalButton onPress={() => router.back()} IconSet={Ionicons} iconName="chevron-down" />
@@ -304,11 +289,10 @@ export default function Home() {
           </View>
           <View style={styles.songInfo}>
             <Text style={styles.songTitle} numberOfLines={1} ellipsizeMode="tail">
-              {songInfo.title}
+              {displayTitle}
             </Text>
-            {/* <Text style={styles.songAlbum} numberOfLines={1} ellipsizeMode='tail'>{songInfo.album}</Text> */}
             <Text style={styles.songArtist} numberOfLines={1} ellipsizeMode="tail">
-              {songInfo.artist}
+              {songInfo.artist || 'Unknown Artist'}
             </Text>
           </View>
         </View>
@@ -318,23 +302,11 @@ export default function Home() {
               <View style={{ flexDirection: 'column' }}>
                 <NormalButton
                   onPress={() => handleShowSlider()}
-                  insideStyle={{
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  insideStyle={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
                   TextElement={
                     <>
                       <Ionicons name="volume-medium-outline" size={24} color="white" />
-                      <Text
-                        style={{
-                          color: '#C6C6C6',
-                          fontFamily: 'MPLUS-Regular',
-                          fontSize: 10,
-                        }}
-                      >
-                        {volumeState}
-                      </Text>
+                      <Text style={{ color: '#C6C6C6', fontFamily: 'MPLUS-Regular', fontSize: 10 }}>{volumeState}</Text>
                     </>
                   }
                 />
@@ -348,7 +320,7 @@ export default function Home() {
                 maximumTrackTintColor="#C6C6C6"
                 thumbTintColor="#FFFFFF"
                 value={volumeState}
-                onValueChange={(e) => handleVolumeState(e)}
+                onSlidingComplete={(e) => handleVolumeState(e)}
               />
             </Animated.View>
             <Animated.View style={[styles.extraControlsWrapper, animatedButtons]}>
@@ -359,31 +331,26 @@ export default function Home() {
             </Animated.View>
           </View>
           <View style={styles.playerSlider}>
-            <Text style={styles.playerSliderTime}>{new Date(songPosition).toISOString().slice(14, 19)}</Text>
+            <Text style={styles.playerSliderTime}>{formatTimeHelper(songPosition)}</Text>
             <Slider
               style={{ flex: 1 }}
-              step={1}
+              step={1000}
               minimumValue={0}
               maximumValue={songDuration}
               minimumTrackTintColor="#FFFFFF"
               maximumTrackTintColor="#C6C6C6"
               thumbTintColor="#FFFFFF"
               value={songPosition}
-              onValueChange={(e) => handleSongPosition(e)}
+              onSlidingComplete={(e) => handleSongPosition(e)}
             />
-            <Text style={styles.playerSliderTime}>{new Date(songDuration).toISOString().slice(14, 19)}</Text>
+            <Text style={styles.playerSliderTime}>{formatTimeHelper(songDuration)}</Text>
           </View>
           <View style={styles.playerBasicControls}>
             <NormalButton rippleColor="rgba(139, 139, 139, 0.5)" onPress={() => handlePreviousTrack()} IconSet={Ionicons} iconName="play-skip-back" />
             <NormalButton
               rippleColor="rgba(139, 139, 139, 0.5)"
               onPress={() => handlePause()}
-              containerStyle={{
-                width: 60,
-                height: 60,
-                borderColor: '#FFF',
-                borderWidth: 2,
-              }}
+              containerStyle={{ width: 60, height: 60, borderColor: '#FFF', borderWidth: 2 }}
               IconSet={MaterialCommunityIcons}
               iconName={playerState === 'play' ? 'pause' : 'play'}
               iconSize={36}
@@ -392,166 +359,27 @@ export default function Home() {
           </View>
         </View>
       </View>
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: insets.top,
-          backgroundColor: '#252525',
-          filter: [{ opacity: 0.5 }],
-        }}
-      />
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: '#252525', filter: [{ opacity: 0.5 }] }} />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-
-    width: '100%',
-    height: '100%',
-    // backgroundColor: '#FFF',
-  },
-  header: {
-    width: '100%',
-    height: 60,
-    paddingHorizontal: 20,
-    // backgroundColor: '#FFF',
-
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerInfo: {
-    flex: 1,
-    // backgroundColor: '#FFF',
-    paddingHorizontal: 20,
-
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    color: '#C6C6C6',
-    fontFamily: 'MPLUS-Regular',
-    fontSize: 10,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
-  headerSubtitle: {
-    color: '#FFF',
-    fontFamily: 'MPLUS-Regular',
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  content: {
-    height: 'auto',
-    // backgroundColor: '#363636',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-
-    alignContent: 'flex-start',
-    justifyContent: 'flex-start',
-    gap: 20,
-  },
-  songImage: {
-    width: '100%',
-
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-
-    borderRadius: 20,
-
-    elevation: 5,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  songInfo: {
-    // backgroundColor: '#c6c6c6',
-    paddingTop: 10,
-
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 20,
-  },
-  songTitle: {
-    color: '#FFF',
-    fontFamily: 'MPLUS-ExtraBold',
-    fontSize: 24,
-  },
-  songAlbum: {
-    color: '#8B8B8B',
-    fontFamily: 'MPLUS',
-    fontSize: 14,
-  },
-  songArtist: {
-    color: '#8B8B8B',
-    fontFamily: 'MPLUS',
-    fontSize: 14,
-  },
-  controls: {
-    // backgroundColor: '#FFF',
-    marginTop: 10,
-    paddingVertical: 20,
-
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 20,
-  },
-  playerExtraControls: {
-    position: 'relative',
-
-    width: '100%',
-    height: 60,
-    // backgroundColor: '#FFF',
-    paddingHorizontal: 20,
-
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  extraControlsWrapper: {
-    position: 'absolute',
-
-    width: '100%',
-
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  playerSlider: {
-    position: 'relative',
-
-    width: '100%',
-    height: 60,
-    // backgroundColor: '#FFF',
-    paddingHorizontal: 20,
-
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playerSliderTime: {
-    color: '#FFF',
-    fontFamily: 'MPLUS-Bold',
-  },
-  playerBasicControls: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 40,
-
-    zIndex: 20,
-  },
+  container: { position: 'relative', width: '100%', height: '100%' },
+  header: { width: '100%', height: 60, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerInfo: { flex: 1, paddingHorizontal: 20, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: '#C6C6C6', fontFamily: 'MPLUS-Regular', fontSize: 10, textAlign: 'center', textTransform: 'uppercase' },
+  headerSubtitle: { color: '#FFF', fontFamily: 'MPLUS-Regular', fontSize: 12, textAlign: 'center' },
+  content: { height: 'auto', paddingHorizontal: 20, paddingVertical: 10, alignContent: 'flex-start', justifyContent: 'flex-start', gap: 20 },
+  songImage: { width: '100%', alignItems: 'center', justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 20, elevation: 5 },
+  image: { width: '100%', height: '100%' },
+  songInfo: { paddingTop: 10, alignItems: 'center', justifyContent: 'flex-start', gap: 20 },
+  songTitle: { color: '#FFF', fontFamily: 'MPLUS-ExtraBold', fontSize: 24 },
+  songArtist: { color: '#8B8B8B', fontFamily: 'MPLUS', fontSize: 14 },
+  controls: { marginTop: 10, paddingVertical: 20, flex: 1, alignItems: 'center', justifyContent: 'space-between', gap: 20 },
+  playerExtraControls: { position: 'relative', width: '100%', height: 60, paddingHorizontal: 20, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  extraControlsWrapper: { position: 'absolute', width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  playerSlider: { position: 'relative', width: '100%', height: 60, paddingHorizontal: 20, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  playerSliderTime: { color: '#FFF', fontFamily: 'MPLUS-Bold' },
+  playerBasicControls: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 40, zIndex: 20 },
 });
