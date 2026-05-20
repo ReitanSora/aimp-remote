@@ -7,4 +7,7 @@ export interface SongInterface {
   rating: number;
   sample_rate: number;
   title: string;
+  name?: string;
+  filename?: string;
+  duration?: number;
 }

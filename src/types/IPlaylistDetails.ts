@@ -30,4 +30,6 @@ export interface PlaylistItemType {
   title: string;
   artist: string;
   duration: number;
+  name?: string;
+  filename?: string;
 }
