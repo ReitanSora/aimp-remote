@@ -4,10 +4,10 @@ import { useAIMP } from '@/hooks/useAIMP';
 import { SongInterface } from '@/types/ISongInformation';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import { BlurView } from 'expo-blur';
+import { BlurTargetView, BlurView } from 'expo-blur';
 import { Image, ImageBackground } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import Animated, {
     useAnimatedStyle,
@@ -36,13 +36,14 @@ export default function Home() {
     const [shuffleState, setShuffleState] = useState<boolean>(false);
     const [muteState, setMuteState] = useState<boolean>(false);
     const [volumeState, setVolumeState] = useState<number>(0);
-    const [playerState, setPlayerState] = useState<string>('stop');
+    const [playerState, setPlayerState] = useState<boolean>(false);
     const [showSlider, setShowSlider] = useState<boolean>(false);
     const [songPosition, setSongPosition] = useState<number>(0);
     const transition = useSharedValue(0);
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { server } = useSettings();
+    const targetRef = useRef<View | null>(null);
 
     const showToast = (message: string) => {
         ToastAndroid.show(message, ToastAndroid.SHORT);
@@ -69,9 +70,8 @@ export default function Home() {
 
     const handleRepeatState = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/track/repeat`, {
-                method: 'POST',
-                body: JSON.stringify({ repeat: repeatState ? 0 : 1 })
+            const response = await fetch(`http://${server.ip}:3553/player/repeat`, {
+                method: 'POST'
             });
             const data = await response.json();
             if (data) setRepeatState(!repeatState);
@@ -82,9 +82,8 @@ export default function Home() {
 
     const handleShuffleState = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/shuffle`, {
-                method: 'POST',
-                body: JSON.stringify({ shuffle: shuffleState ? 0 : 1 })
+            const response = await fetch(`http://${server.ip}:3553/player/shuffle`, {
+                method: 'POST'
             });
             const data = await response.json();
             if (data) setShuffleState(!shuffleState);
@@ -95,9 +94,8 @@ export default function Home() {
 
     const handleMuteState = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/mute`, {
-                method: 'POST',
-                body: JSON.stringify({ mute: muteState ? 0 : 1 })
+            const response = await fetch(`http://${server.ip}:3553/player/mute`, {
+                method: 'POST'
             });
             const data = await response.json();
             if (data) setMuteState(!muteState);
@@ -108,9 +106,9 @@ export default function Home() {
 
     const handleVolumeState = async (volume: number) => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/volume`, {
+            const response = await fetch(`http://${server.ip}:3553/player/volume`, {
                 method: 'POST',
-                body: JSON.stringify({ level: volume })
+                body: JSON.stringify({ volume: volume })
             });
             const data = await response.json();
             if (data) setVolumeState(volume);
@@ -123,7 +121,9 @@ export default function Home() {
 
     const handleNextTrack = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/next`);
+            const response = await fetch(`http://${server.ip}:3553/player/next`,{
+                method: 'POST'
+            });
             await response.json();
         } catch {
             showToast('Error next track');
@@ -132,7 +132,9 @@ export default function Home() {
 
     const handlePreviousTrack = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/previous`);
+            const response = await fetch(`http://${server.ip}:3553/player/previous`,{
+                method: 'POST'
+            });
             await response.json();
         } catch {
             showToast('Error previous track');
@@ -141,12 +143,11 @@ export default function Home() {
 
     const handlePause = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/playpause`);
-            const data = await response.json();
-            if (data) {
-                const status = playerState;
-                setPlayerState(status === 'play' ? 'pause' : 'play')
-            }
+            const response = await fetch(`http://${server.ip}:3553/player/playpause`,{
+                method: 'POST'
+            });
+            await response.json();
+            setPlayerState(!playerState);
         } catch {
             showToast('Error set play/pause state');
         }
@@ -159,7 +160,7 @@ export default function Home() {
 
     const handleSongPosition = async (position: number) => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/track/position`, {
+            const response = await fetch(`http://${server.ip}:3553/player/seek`, {
                 method: 'POST',
                 body: JSON.stringify({ position: position })
             })
@@ -172,8 +173,8 @@ export default function Home() {
 
     useEffect(() => {
         if (aimpEvent.playerState === null) return;
-        if (aimpEvent.playerState === 2) setPlayerState('play');
-        if (aimpEvent.playerState === 1) setPlayerState('pause');
+        if (aimpEvent.playerState === 2) setPlayerState(true);
+        if (aimpEvent.playerState !== 2) setPlayerState(false);
     }, [aimpEvent.playerState])
 
     useEffect(() => {
@@ -254,84 +255,33 @@ export default function Home() {
             }
         }
 
-        const songDuration = async () => {
+        const playerStates = async () => {
             try {
-                const durationResponse = await fetch(`http://${server.ip}:3553/track/duration`)
-                const durationData = await durationResponse.json();
-                const number = Number(durationData);
-                setSongDuration(number);
-            } catch {
-                showToast('Error get song duration');
-            }
-        }
-
-        const repeatState = async () => {
-            try {
-                const response = await fetch(`http://${server.ip}:3553/track/repeat`);
+                const response = await fetch(`http://${server.ip}:3553/player/state`)
                 const data = await response.json();
-                setRepeatState(data === -1 ? true : false)
+                setSongDuration(Number(data.duration));
+                setRepeatState(data.repeat ? true : false)
+                setShuffleState(data.shuffle ? true : false)
+                setMuteState(data.mute ? true : false);
+                setVolumeState(Number(data.volume));
+                setPlayerState(data.state === 2 ? true : false)
             } catch {
-                showToast('Error get repeat state');
-            }
-        }
-
-        const shuffleState = async () => {
-            try {
-                const response = await fetch(`http://${server.ip}:3553/shuffle`);
-                const data = await response.json();
-                setShuffleState(data === -1 ? true : false)
-            } catch {
-                showToast('Error get shuffle state');
-            }
-        }
-
-        const muteState = async () => {
-            try {
-                const response = await fetch(`http://${server.ip}:3553/mute`);
-                const data = await response.json();
-                setMuteState(data === 1 ? true : false);
-            } catch {
-                showToast('Error get mute state');
-            }
-        }
-
-        const volumeState = async () => {
-            try {
-                const response = await fetch(`http://${server.ip}:3553/volume`);
-                const data = await response.json();
-                const number = Number(data);
-                setVolumeState(number);
-            } catch {
-                showToast('Error get volume state');
-            }
-        }
-
-        const playerState = async () => {
-            try {
-                const response = await fetch(`http://${server.ip}:3553/playerstate`);
-                const data = await response.json();
-                setPlayerState(data === 0 ? 'stop' : (data === 1 ? 'pause' : 'play'))
-            } catch {
-                showToast('Error get player state');
+                showToast('Error player status');
             }
         }
 
         songCover();
         songInfo();
-        songDuration();
-        repeatState();
-        shuffleState();
-        muteState();
-        volumeState();
-        playerState();
+        playerStates();
     }, [server])
 
     return (
         <>
             <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-                <ImageBackground style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }} source={{ uri: imageUri }} transition={400} cachePolicy={'none'} placeholder={null} recyclingKey={imageUri}>
-                    <BlurView intensity={100} tint='dark' experimentalBlurMethod='dimezisBlurView' style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }} />
-                </ImageBackground>
+                <BlurTargetView ref={targetRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }}>
+                    <ImageBackground style={{flex: 1}} source={{ uri: imageUri }} transition={250} cachePolicy={'none'}/>
+                </BlurTargetView>
+                <BlurView intensity={400} tint='systemMaterialDark' blurTarget={targetRef} blurMethod='dimezisBlurViewSdk31Plus' style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }} />
                 <View style={styles.header}>
                     <NormalButton
                         onPress={() => router.back()}
@@ -356,9 +306,7 @@ export default function Home() {
                                 style={styles.image}
                                 transition={400}
                                 contentFit='cover'
-                                placeholder={null}
                                 cachePolicy={'none'}
-                                recyclingKey={imageUri}
                             />}
                     </View>
                     <View style={styles.songInfo}>
@@ -447,7 +395,7 @@ export default function Home() {
                             onPress={() => handlePause()}
                             containerStyle={{ width: 60, height: 60, borderColor: '#FFF', borderWidth: 2 }}
                             IconSet={MaterialCommunityIcons}
-                            iconName={playerState === 'play' ? 'pause' : 'play'}
+                            iconName={playerState ? 'pause' : 'play'}
                             iconSize={36}
                         />
                         <NormalButton
@@ -459,7 +407,7 @@ export default function Home() {
                     </View>
                 </View>
             </View>
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: '#252525', filter: [{ opacity: 0.5 }] }} />
+            {/* <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: '#252525', filter: [{ opacity: 0.5 }] }} /> */}
         </>
     )
 }
