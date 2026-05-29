@@ -50,7 +50,7 @@ export default function Home() {
     useEffect(() => {
         const playlistInfo = async () => {
             try {
-                const response = await fetch(`http://${server.ip}:3553/playlist`);
+                const response = await fetch(`http://${server.ip}:3553/playlist/list`);
                 const info = await response.json();
 
                 setPlaylists(info);
