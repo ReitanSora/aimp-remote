@@ -8,7 +8,7 @@ import Svg, {
   Path,
   Text,
 } from "react-native-svg";
-const SVGComponent = (props) => (
+const SVGComponent = (props: any) => (
   <Svg
     xmlns="http://www.w3.org/2000/svg"
     xmlnsXlink="http://www.w3.org/1999/xlink"
@@ -43,9 +43,6 @@ const SVGComponent = (props) => (
         textAnchor="end"
         fontFamily="Tahoma"
         fontSize="32px"
-        style={{
-          fontStyle: "italic",
-        }}
       >
         {"ENJOY THE MUSIC!"}
       </Text>

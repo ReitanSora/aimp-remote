@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "AIMP Remote Control",
-    "slug": "aimp-remote",
-    "version": "1.1.0",
+    "name": "Fluke",
+    "slug": "fluke-aimp-remote",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icons/adaptive-icon-color.png",
-    "scheme": "aimpremote",
+    "scheme": "flukeaimpremote",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
@@ -17,7 +17,7 @@
         "monochromeImage": "./assets/icons/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.reitansora.aimpremote"
+      "package": "com.reitansora.flukeaimpremote"
     },
     "primaryColor": "#FFFFFF",
     "web": {
