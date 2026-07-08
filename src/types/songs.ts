@@ -1,4 +1,4 @@
-export interface SongInterface {
+export interface Songs {
     album: string;
     artist: string;
     bitrate: number;

@@ -1,6 +1,6 @@
 import { useSettings } from '@/context/appContext';
 import { useAIMP } from '@/hooks/useAIMP';
-import { SongInterface } from '@/types/ISongInformation';
+import { Songs } from '@/types/songs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -8,7 +8,7 @@ import { StyleSheet, Text, ToastAndroid, TouchableNativeFeedback, View } from 'r
 import NormalButton from '../player/normalButton';
 import SoundWave from '../player/soundWave';
 
-const defaultSong: SongInterface = {
+const defaultSong: Songs = {
     album: 'Unknown',
     artist: 'Unknown',
     bitrate: 0,
@@ -20,7 +20,7 @@ const defaultSong: SongInterface = {
 };
 
 export default function TogglePlayer() {
-    const [songInfo, setSongInfo] = useState<SongInterface>(defaultSong);
+    const [songInfo, setSongInfo] = useState<Songs>(defaultSong);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const { aimpEvent } = useAIMP();
     const router = useRouter();
@@ -115,7 +115,7 @@ export default function TogglePlayer() {
                                 {songInfo.title}
                             </Text>
                             <Text
-                                style={[styles.text, { color: appColor === '#8B8B8B' ? '#FFF' : '#C6C6C6', fontSize: 12 }]}
+                                style={[styles.text, { color: appColor === '#8B8B8B' ? '#FFF' : '#C6C6C6', fontSize: 14 }]}
                                 numberOfLines={1}
                                 ellipsizeMode='tail'>
                                 {songInfo.artist}
