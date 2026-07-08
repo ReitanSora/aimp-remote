@@ -1,11 +1,9 @@
-import NormalButton from '@/components/player/normalButton';
-import Header from '@/components/ui/header';
+import SearchHeader from '@/components/ui/header';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, ToastAndroid, View } from 'react-native';
+import { StyleSheet, ToastAndroid, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { scheduleOnRN } from 'react-native-worklets';
 import { useSettings } from '../../context/appContext';
 
 export default function Settings() {
@@ -24,8 +22,8 @@ export default function Settings() {
         try {
             setServer({
                 ip: serverIp,
-                name: serverName
-            })
+                name: serverName,
+            });
             showToast('Server saved!');
         } catch {
             showToast('Error saving settings');
@@ -34,17 +32,15 @@ export default function Settings() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            <Header
+            <SearchHeader
                 LeftSideIconSet={Ionicons}
                 iconName='chevron-back'
                 leftSideOnPress={() => router.back()}
-                hasSearchBar={false}
                 title='Settings'
             />
-            
         </View>
-    )
-};
+    );
+}
 
 const styles = StyleSheet.create({
     container: {
@@ -85,7 +81,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 40
+        gap: 40,
     },
     sectionInputs: {
         width: '70%',

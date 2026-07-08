@@ -1,11 +1,10 @@
-import { Ionicons } from '@expo/vector-icons'
-import React from 'react'
-import { StyleSheet, Text, TextInput, View } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
-import NormalButton from '../player/normalButton'
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import NormalButton from '../player/normalButton';
 
-interface SearchBarProps {
-    hasSearchBar?: boolean;
+interface HeaderProps {
     searchBarVisible?: boolean;
     searchValue?: string;
     setSearchBarVisible?: (value: boolean) => void;
@@ -18,15 +17,23 @@ interface SearchBarProps {
     title?: string;
 }
 
-export default function Header({ hasSearchBar = true, searchBarVisible, searchValue, setSearchBarVisible, setSearchValue, leftSideOnPress, LeftSideIconSet, iconName, iconSize, iconColor, title }: SearchBarProps) {
+export default function SearchHeader({
+    searchBarVisible,
+    setSearchBarVisible = () => {},
+    searchValue,
+    setSearchValue = () => {},
+    leftSideOnPress,
+    LeftSideIconSet,
+    iconName,
+    iconSize,
+    iconColor,
+}: HeaderProps) {
     const transition = useSharedValue(0);
 
     const animatedSearchbar = useAnimatedStyle(() => {
         return {
             opacity: transition.value,
-            transform: [
-                { scale: withTiming(transition.value === 0 ? 0.9 : 1) },
-            ],
+            transform: [{ scale: withTiming(transition.value === 0 ? 0.9 : 1) }],
             zIndex: transition.value > 0 ? 0 : -1,
         };
     });
@@ -34,7 +41,7 @@ export default function Header({ hasSearchBar = true, searchBarVisible, searchVa
     const animatedNormalHeader = useAnimatedStyle(() => {
         return {
             opacity: 1 - transition.value,
-            transform: [{ scale: 1 - (transition.value * 0.1) }],
+            transform: [{ scale: 1 - transition.value * 0.1 }],
             zIndex: transition.value < 1 ? 0 : -1,
         };
     });
@@ -52,67 +59,71 @@ export default function Header({ hasSearchBar = true, searchBarVisible, searchVa
 
     return (
         <View style={styles.header}>
-            {hasSearchBar ?
-                <>
-                    <Animated.View
-                        pointerEvents={searchBarVisible ? 'none' : 'auto'}
-                        style={[styles.normalWrapper, animatedNormalHeader]}
-                    >
-                        <NormalButton
-                            rippleColor='rgba(139, 139, 139, 0.5)'
-                            onPress={() => leftSideOnPress()}
-                            IconSet={LeftSideIconSet}
-                            iconName={iconName}
-                            iconSize={iconSize}
-                            iconColor={iconColor}
-                        />
-                        <NormalButton
-                            rippleColor='rgba(139, 139, 139, 0.5)'
-                            onPress={() => handleShowSearchbar()}
-                            IconSet={Ionicons}
-                            iconName='search'
-                        />
-                    </Animated.View>
-                    <Animated.View
-                        pointerEvents={searchBarVisible ? 'auto' : 'none'}
-                        style={[styles.searchbarWrapper, animatedSearchbar]}
-                    >
-                        <View style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-                            <Ionicons name="search" size={24} color="white" />
-                        </View>
-                        <TextInput
-                            style={styles.input}
-                            placeholder='Search'
-                            placeholderTextColor={'#8B8B8B'}
-                            cursorColor={'#8B8B8B'}
-                            selectionColor={'#8B8B8B'}
-                            selectionHandleColor={'#8B8B8B'}
-                            value={searchValue}
-                            onChangeText={newText => setSearchValue(newText)}
-                        />
-                        <NormalButton
-                            rippleColor='transparent'
-                            onPress={() => handleCloseSearchbar()}
-                            IconSet={Ionicons}
-                            iconName='close'
-                        />
-                    </Animated.View>
-                </> :
-                <View
-                    style={[styles.normalWrapper, {alignItems: 'center', justifyContent: 'flex-start', gap: 20,}]}
-                >
-                    <NormalButton
-                        rippleColor='rgba(139, 139, 139, 0.5)'
-                        onPress={() => leftSideOnPress()}
-                        IconSet={LeftSideIconSet}
-                        iconName={iconName}
-                        iconSize={iconSize}
-                        iconColor={iconColor}
+            <Animated.View
+                pointerEvents={searchBarVisible ? 'none' : 'auto'}
+                style={[styles.normalWrapper, animatedNormalHeader]}>
+                <NormalButton
+                    rippleColor='rgba(139, 139, 139, 0.5)'
+                    onPress={() => leftSideOnPress()}
+                    IconSet={LeftSideIconSet}
+                    iconName={iconName}
+                    iconSize={iconSize}
+                    iconColor={iconColor}
+                />
+                <NormalButton
+                    rippleColor='rgba(139, 139, 139, 0.5)'
+                    onPress={() => handleShowSearchbar()}
+                    IconSet={Ionicons}
+                    iconName='search'
+                />
+            </Animated.View>
+            <Animated.View
+                pointerEvents={searchBarVisible ? 'auto' : 'none'}
+                style={[styles.searchbarWrapper, animatedSearchbar]}>
+                <View style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons
+                        name='search'
+                        size={24}
+                        color='white'
                     />
-                    <Text style={styles.title}>{title}</Text>
-                </View>}
+                </View>
+                <TextInput
+                    style={styles.input}
+                    placeholder='Search'
+                    placeholderTextColor={'#8B8B8B'}
+                    cursorColor={'#8B8B8B'}
+                    selectionColor={'#8B8B8B'}
+                    selectionHandleColor={'#8B8B8B'}
+                    value={searchValue}
+                    onChangeText={(newText) => setSearchValue(newText)}
+                />
+                <NormalButton
+                    rippleColor='transparent'
+                    onPress={() => handleCloseSearchbar()}
+                    IconSet={Ionicons}
+                    iconName='close'
+                />
+            </Animated.View>
         </View>
-    )
+    );
+}
+
+export function NormalHeader({ iconName, iconSize, iconColor, leftSideOnPress, LeftSideIconSet, title }: HeaderProps) {
+    return (
+        <View style={styles.header}>
+            <View style={[styles.normalWrapper, { alignItems: 'center', justifyContent: 'flex-start', gap: 20 }]}>
+                <NormalButton
+                    rippleColor='rgba(139, 139, 139, 0.5)'
+                    onPress={() => leftSideOnPress()}
+                    IconSet={LeftSideIconSet}
+                    iconName={iconName}
+                    iconSize={iconSize}
+                    iconColor={iconColor}
+                />
+                <Text style={styles.title}>{title}</Text>
+            </View>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -125,7 +136,7 @@ const styles = StyleSheet.create({
         // backgroundColor: '#c6c6c6',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
     normalWrapper: {
         position: 'absolute',
