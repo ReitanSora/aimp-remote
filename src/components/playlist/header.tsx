@@ -1,15 +1,14 @@
 import { useSettings } from '@/context/appContext';
-import { PlaylistDetailsHeaderProps } from '@/types/IPlaylistDetails';
+import { PlaylistDetailsHeader } from '@/types/playlists';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-export default function PlaylistDetailsHeader({ playlistInfo, playlistStats }: PlaylistDetailsHeaderProps) {
-
+export default function Header({ playlistInfo, playlistStats }: PlaylistDetailsHeader) {
     const { appColor } = useSettings();
 
     function formatTime(totalSeconds: number): string {
-        if (totalSeconds <= 0) return "0 segundos";
+        if (totalSeconds <= 0) return '0 segundos';
 
         const hours: number = Math.floor(totalSeconds / 3600);
         const minutes: number = Math.floor((totalSeconds % 3600) / 60);
@@ -29,7 +28,7 @@ export default function PlaylistDetailsHeader({ playlistInfo, playlistStats }: P
             parts.push(`${seconds} ${'s'}`);
         }
 
-        return parts.join(" ");
+        return parts.join(' ');
     }
 
     function formatBytes(bytes: number, decimals: number = 2): string {
@@ -47,7 +46,7 @@ export default function PlaylistDetailsHeader({ playlistInfo, playlistStats }: P
     }
 
     const fixedDuration = formatTime(playlistInfo?.duration);
-    const fixedSize = formatBytes(playlistStats?.total_size_bytes)
+    const fixedSize = formatBytes(playlistStats?.total_size_bytes);
 
     return (
         <View style={styles.playlistInfo}>
@@ -55,42 +54,72 @@ export default function PlaylistDetailsHeader({ playlistInfo, playlistStats }: P
                 style={[
                     styles.gradientBox,
                     {
-                        experimental_backgroundImage: `linear-gradient(180deg, ${appColor} , transparent)`
-                    }
+                        experimental_backgroundImage: `linear-gradient(180deg, ${appColor} , transparent)`,
+                    },
                 ]}
             />
             <Text style={[styles.infoText, { color: '#FFF', fontSize: 24, fontFamily: 'MPLUS-ExtraBold' }]}>{playlistInfo?.name}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.info} >
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}>
+                <View style={styles.info}>
                     <View style={styles.infoPill}>
-                        <Ionicons name="musical-notes-outline" size={24} color="#C6C6C6" />
+                        <Ionicons
+                            name='musical-notes-outline'
+                            size={24}
+                            color='#C6C6C6'
+                        />
                         <Text style={styles.infoText}>{playlistInfo?.item_count}</Text>
                     </View>
                     <View style={styles.infoPill}>
-                        <Ionicons name="time-outline" size={24} color="#C6C6C6" />
+                        <Ionicons
+                            name='time-outline'
+                            size={24}
+                            color='#C6C6C6'
+                        />
                         <Text style={styles.infoText}>{fixedDuration}</Text>
                     </View>
                     <View style={styles.infoPill}>
-                        <Ionicons name="play-outline" size={24} color="#C6C6C6" />
+                        <Ionicons
+                            name='play-outline'
+                            size={24}
+                            color='#C6C6C6'
+                        />
                         <Text style={styles.infoText}>{playlistStats?.total_play_count} times</Text>
                     </View>
                     <View style={styles.infoPill}>
-                        <Ionicons name="person-circle-outline" size={24} color="#C6C6C6" />
+                        <Ionicons
+                            name='person-circle-outline'
+                            size={24}
+                            color='#C6C6C6'
+                        />
                         <Text style={styles.infoText}>{playlistStats?.artist_count}</Text>
                     </View>
                     <View style={styles.infoPill}>
-                        <Ionicons name="albums-outline" size={24} color="#C6C6C6" />
+                        <Ionicons
+                            name='albums-outline'
+                            size={24}
+                            color='#C6C6C6'
+                        />
                         <Text style={styles.infoText}>{playlistStats?.album_count}</Text>
                     </View>
                     <View style={styles.infoPill}>
-                        <MaterialCommunityIcons name="music-box-outline" size={24} color="#C6C6C6" />
+                        <MaterialCommunityIcons
+                            name='music-box-outline'
+                            size={24}
+                            color='#C6C6C6'
+                        />
                         <Text style={styles.infoText}>{playlistStats?.genres.length} Genres</Text>
                     </View>
                 </View>
             </ScrollView>
             <View style={styles.stats}>
                 <View style={[styles.infoPill, { backgroundColor: 'transparent', elevation: 0 }]}>
-                    <Ionicons name="folder-open-outline" size={24} color="#C6C6C6" />
+                    <Ionicons
+                        name='folder-open-outline'
+                        size={24}
+                        color='#C6C6C6'
+                    />
                     <Text style={styles.infoText}>{fixedSize}</Text>
                 </View>
                 <View style={styles.statSeparator} />
@@ -99,13 +128,17 @@ export default function PlaylistDetailsHeader({ playlistInfo, playlistStats }: P
                 </View>
                 <View style={styles.statSeparator} />
                 <View style={[styles.infoPill, { backgroundColor: 'transparent', elevation: 0 }]}>
-                    <Ionicons name="star-outline" size={24} color="#C6C6C6" />
+                    <Ionicons
+                        name='star-outline'
+                        size={24}
+                        color='#C6C6C6'
+                    />
                     <Text style={styles.infoText}>{playlistStats?.avg_rating.toFixed(2)} avg</Text>
                 </View>
             </View>
         </View>
-    )
-};
+    );
+}
 
 const styles = StyleSheet.create({
     playlistInfo: {
@@ -170,6 +203,6 @@ const styles = StyleSheet.create({
         width: 5,
         height: 5,
         backgroundColor: '#8B8B8B',
-        borderRadius: 5
+        borderRadius: 5,
     },
 });
