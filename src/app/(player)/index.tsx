@@ -1,7 +1,7 @@
 import NormalButton from '@/components/player/normalButton';
 import { useAIMP } from '@/hooks/useAIMP';
 // import { useAppState } from '@/hooks/useAppState';
-import { SongInterface } from '@/types/ISongInformation';
+import { Songs } from '@/types/songs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { BlurTargetView, BlurView } from 'expo-blur';
@@ -9,15 +9,11 @@ import { Image, ImageBackground } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, Text, ToastAndroid, View } from 'react-native';
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '../../context/appContext';
 const { height: screenHeight } = Dimensions.get('window');
-const defaultSong: SongInterface = {
+const defaultSong: Songs = {
     album: 'Unknown',
     artist: 'Unknown',
     bitrate: 0,
@@ -25,12 +21,12 @@ const defaultSong: SongInterface = {
     play_count: 0,
     rating: 0,
     sample_rate: 0,
-    title: 'Unknown'
-}
+    title: 'Unknown',
+};
 
 export default function Home() {
     const [imageUri, setImageUri] = useState<string>();
-    const [songInfo, setSongInfo] = useState<SongInterface>(defaultSong);
+    const [songInfo, setSongInfo] = useState<Songs>(defaultSong);
     const [songDuration, setSongDuration] = useState<number>(0);
     const [repeatState, setRepeatState] = useState<boolean>(false);
     const [shuffleState, setShuffleState] = useState<boolean>(false);
@@ -54,16 +50,14 @@ export default function Home() {
     const animatedSlider = useAnimatedStyle(() => {
         return {
             opacity: transition.value,
-            transform: [
-                { scale: withTiming(transition.value === 0 ? 0.9 : 1) },
-            ],
+            transform: [{ scale: withTiming(transition.value === 0 ? 0.9 : 1) }],
             zIndex: transition.value > 0 ? 1 : -1,
         };
     });
     const animatedButtons = useAnimatedStyle(() => {
         return {
             opacity: 1 - transition.value,
-            transform: [{ scale: 1 - (transition.value * 0.1) }],
+            transform: [{ scale: 1 - transition.value * 0.1 }],
             zIndex: transition.value < 1 ? 1 : -1,
         };
     });
@@ -71,44 +65,44 @@ export default function Home() {
     const handleRepeatState = async () => {
         try {
             const response = await fetch(`http://${server.ip}:3553/player/repeat`, {
-                method: 'POST'
+                method: 'POST',
             });
             const data = await response.json();
             if (data) setRepeatState(!repeatState);
         } catch {
             showToast('Error set repeat state');
         }
-    }
+    };
 
     const handleShuffleState = async () => {
         try {
             const response = await fetch(`http://${server.ip}:3553/player/shuffle`, {
-                method: 'POST'
+                method: 'POST',
             });
             const data = await response.json();
             if (data) setShuffleState(!shuffleState);
         } catch {
             showToast('Error set shuffle state');
         }
-    }
+    };
 
     const handleMuteState = async () => {
         try {
             const response = await fetch(`http://${server.ip}:3553/player/mute`, {
-                method: 'POST'
+                method: 'POST',
             });
             const data = await response.json();
             if (data) setMuteState(!muteState);
         } catch {
             showToast('Error set mute state');
         }
-    }
+    };
 
     const handleVolumeState = async (volume: number) => {
         try {
             const response = await fetch(`http://${server.ip}:3553/player/volume`, {
                 method: 'POST',
-                body: JSON.stringify({ volume: volume })
+                body: JSON.stringify({ volume: volume }),
             });
             const data = await response.json();
             if (data) setVolumeState(volume);
@@ -117,12 +111,12 @@ export default function Home() {
         } catch {
             showToast('Error set volume');
         }
-    }
+    };
 
     const handleNextTrack = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/next`,{
-                method: 'POST'
+            const response = await fetch(`http://${server.ip}:3553/player/next`, {
+                method: 'POST',
             });
             await response.json();
         } catch {
@@ -132,8 +126,8 @@ export default function Home() {
 
     const handlePreviousTrack = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/previous`,{
-                method: 'POST'
+            const response = await fetch(`http://${server.ip}:3553/player/previous`, {
+                method: 'POST',
             });
             await response.json();
         } catch {
@@ -143,8 +137,8 @@ export default function Home() {
 
     const handlePause = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/playpause`,{
-                method: 'POST'
+            const response = await fetch(`http://${server.ip}:3553/player/playpause`, {
+                method: 'POST',
             });
             await response.json();
             setPlayerState(!playerState);
@@ -162,10 +156,10 @@ export default function Home() {
         try {
             const response = await fetch(`http://${server.ip}:3553/player/seek`, {
                 method: 'POST',
-                body: JSON.stringify({ position: position })
-            })
+                body: JSON.stringify({ position: position }),
+            });
             const data = await response.json();
-            if (data) setSongPosition(position)
+            if (data) setSongPosition(position);
         } catch {
             showToast('Error set song position');
         }
@@ -175,26 +169,26 @@ export default function Home() {
         if (aimpEvent.playerState === null) return;
         if (aimpEvent.playerState === 2) setPlayerState(true);
         if (aimpEvent.playerState !== 2) setPlayerState(false);
-    }, [aimpEvent.playerState])
+    }, [aimpEvent.playerState]);
 
     useEffect(() => {
         if (aimpEvent.repeatState === null) return;
         if (aimpEvent.repeatState !== repeatState) setRepeatState(aimpEvent.repeatState);
-    }, [aimpEvent.repeatState, repeatState])
+    }, [aimpEvent.repeatState, repeatState]);
 
     useEffect(() => {
         if (aimpEvent.shuffleState === null) return;
         if (aimpEvent.shuffleState !== shuffleState) setShuffleState(aimpEvent.shuffleState);
-    }, [aimpEvent.shuffleState])
+    }, [aimpEvent.shuffleState]);
 
     useEffect(() => {
         if (aimpEvent.muteState === null) return;
         if (aimpEvent.muteState !== muteState) setMuteState(aimpEvent.muteState);
-    }, [aimpEvent.muteState, muteState])
+    }, [aimpEvent.muteState, muteState]);
 
     useEffect(() => {
         if (aimpEvent.position !== 0) setSongPosition(Number(aimpEvent.position));
-    }, [aimpEvent.position])
+    }, [aimpEvent.position]);
 
     useEffect(() => {
         if (aimpEvent.track.album !== '') {
@@ -206,16 +200,16 @@ export default function Home() {
                 play_count: aimpEvent.track.play_count,
                 rating: aimpEvent.track.rating,
                 sample_rate: aimpEvent.track.sample_rate,
-                title: aimpEvent.track.title
+                title: aimpEvent.track.title,
             });
         }
-    }, [aimpEvent.track])
+    }, [aimpEvent.track]);
 
     useEffect(() => {
         if (Math.trunc(aimpEvent.track.duration * 1000) !== songDuration && aimpEvent.track.duration !== 0) {
-            setSongDuration(Math.trunc(aimpEvent.track.duration * 1000))
+            setSongDuration(Math.trunc(aimpEvent.track.duration * 1000));
         }
-    }, [aimpEvent.track.duration, songDuration])
+    }, [aimpEvent.track.duration, songDuration]);
 
     useEffect(() => {
         const songCover = async () => {
@@ -231,7 +225,7 @@ export default function Home() {
         if (aimpEvent.track.title) {
             songCover();
         }
-    }, [aimpEvent.track.title, aimpEvent.track.artist, server])
+    }, [aimpEvent.track.title, aimpEvent.track.artist, server]);
 
     useEffect(() => {
         const songCover = async () => {
@@ -253,35 +247,48 @@ export default function Home() {
             } catch {
                 showToast('Error get song info');
             }
-        }
+        };
 
         const playerStates = async () => {
             try {
-                const response = await fetch(`http://${server.ip}:3553/player/state`)
+                const response = await fetch(`http://${server.ip}:3553/player/state`);
                 const data = await response.json();
                 setSongDuration(Number(data.duration));
-                setRepeatState(data.repeat ? true : false)
-                setShuffleState(data.shuffle ? true : false)
+                setRepeatState(data.repeat ? true : false);
+                setShuffleState(data.shuffle ? true : false);
                 setMuteState(data.mute ? true : false);
                 setVolumeState(Number(data.volume));
-                setPlayerState(data.state === 2 ? true : false)
+                setPlayerState(data.state === 2 ? true : false);
             } catch {
                 showToast('Error player status');
             }
-        }
+        };
 
         songCover();
         songInfo();
         playerStates();
-    }, [server])
+    }, [server]);
 
     return (
         <>
             <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-                <BlurTargetView ref={targetRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }}>
-                    <ImageBackground style={{flex: 1}} source={{ uri: imageUri }} transition={250} cachePolicy={'none'}/>
+                <BlurTargetView
+                    ref={targetRef}
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }}>
+                    <ImageBackground
+                        style={{ flex: 1 }}
+                        source={{ uri: imageUri }}
+                        transition={250}
+                        cachePolicy={'none'}
+                    />
                 </BlurTargetView>
-                <BlurView intensity={400} tint='systemMaterialDark' blurTarget={targetRef} blurMethod='dimezisBlurViewSdk31Plus' style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }} />
+                <BlurView
+                    intensity={400}
+                    tint='systemMaterialDark'
+                    blurTarget={targetRef}
+                    blurMethod='dimezisBlurViewSdk31Plus'
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }}
+                />
                 <View style={styles.header}>
                     <NormalButton
                         onPress={() => router.back()}
@@ -300,19 +307,30 @@ export default function Home() {
                 </View>
                 <View style={styles.content}>
                     <View style={[styles.songImage, { aspectRatio: 1 }]}>
-                        {imageUri &&
+                        {imageUri && (
                             <Image
                                 source={{ uri: imageUri }}
                                 style={styles.image}
                                 transition={400}
                                 contentFit='cover'
                                 cachePolicy={'none'}
-                            />}
+                            />
+                        )}
                     </View>
                     <View style={styles.songInfo}>
-                        <Text style={styles.songTitle} numberOfLines={1} ellipsizeMode='tail'>{songInfo.title}</Text>
+                        <Text
+                            style={styles.songTitle}
+                            numberOfLines={1}
+                            ellipsizeMode='tail'>
+                            {songInfo.title}
+                        </Text>
                         {/* <Text style={styles.songAlbum} numberOfLines={1} ellipsizeMode='tail'>{songInfo.album}</Text> */}
-                        <Text style={styles.songArtist} numberOfLines={1} ellipsizeMode='tail'>{songInfo.artist}</Text>
+                        <Text
+                            style={styles.songArtist}
+                            numberOfLines={1}
+                            ellipsizeMode='tail'>
+                            {songInfo.artist}
+                        </Text>
                     </View>
                 </View>
                 <View style={styles.controls}>
@@ -324,7 +342,11 @@ export default function Home() {
                                     insideStyle={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
                                     TextElement={
                                         <>
-                                            <Ionicons name="volume-medium-outline" size={24} color="white" />
+                                            <Ionicons
+                                                name='volume-medium-outline'
+                                                size={24}
+                                                color='white'
+                                            />
                                             <Text style={{ color: '#C6C6C6', fontFamily: 'MPLUS-Regular', fontSize: 10 }}>{volumeState}</Text>
                                         </>
                                     }
@@ -335,8 +357,8 @@ export default function Home() {
                                 step={1}
                                 minimumValue={0}
                                 maximumValue={100}
-                                minimumTrackTintColor="#FFFFFF"
-                                maximumTrackTintColor="#C6C6C6"
+                                minimumTrackTintColor='#FFFFFF'
+                                maximumTrackTintColor='#C6C6C6'
                                 thumbTintColor='#FFFFFF'
                                 value={volumeState}
                                 onValueChange={(e) => handleVolumeState(e)}
@@ -347,19 +369,19 @@ export default function Home() {
                                 onPress={() => handleRepeatState()}
                                 IconSet={Ionicons}
                                 iconName='repeat'
-                                iconColor={repeatState ? "white" : "#8b8b8b"}
+                                iconColor={repeatState ? 'white' : '#8b8b8b'}
                             />
                             <NormalButton
                                 onPress={() => handleShuffleState()}
                                 IconSet={Ionicons}
                                 iconName='shuffle'
-                                iconColor={shuffleState ? "white" : "#8b8b8b"}
+                                iconColor={shuffleState ? 'white' : '#8b8b8b'}
                             />
                             <NormalButton
                                 onPress={() => handleMuteState()}
                                 IconSet={Ionicons}
                                 iconName='volume-mute-outline'
-                                iconColor={muteState ? "white" : "#8b8b8b"}
+                                iconColor={muteState ? 'white' : '#8b8b8b'}
                             />
                             <NormalButton
                                 onPress={() => handleShowSlider()}
@@ -375,8 +397,8 @@ export default function Home() {
                             step={1}
                             minimumValue={0}
                             maximumValue={songDuration}
-                            minimumTrackTintColor="#FFFFFF"
-                            maximumTrackTintColor="#C6C6C6"
+                            minimumTrackTintColor='#FFFFFF'
+                            maximumTrackTintColor='#C6C6C6'
                             thumbTintColor='#FFFFFF'
                             value={songPosition}
                             onValueChange={(e) => handleSongPosition(e)}
@@ -409,7 +431,7 @@ export default function Home() {
             </View>
             {/* <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: '#252525', filter: [{ opacity: 0.5 }] }} /> */}
         </>
-    )
+    );
 }
 
 const styles = StyleSheet.create({
@@ -441,14 +463,14 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         color: '#C6C6C6',
-        fontFamily: "MPLUS-Regular",
+        fontFamily: 'MPLUS-Regular',
         fontSize: 10,
         textAlign: 'center',
-        textTransform: 'uppercase'
+        textTransform: 'uppercase',
     },
     headerSubtitle: {
         color: '#FFF',
-        fontFamily: "MPLUS-Regular",
+        fontFamily: 'MPLUS-Regular',
         fontSize: 12,
         textAlign: 'center',
     },
@@ -487,17 +509,17 @@ const styles = StyleSheet.create({
     },
     songTitle: {
         color: '#FFF',
-        fontFamily: "MPLUS-ExtraBold",
+        fontFamily: 'MPLUS-ExtraBold',
         fontSize: 24,
     },
     songAlbum: {
         color: '#8B8B8B',
-        fontFamily: "MPLUS",
+        fontFamily: 'MPLUS',
         fontSize: 14,
     },
     songArtist: {
         color: '#8B8B8B',
-        fontFamily: "MPLUS",
+        fontFamily: 'MPLUS-Regular',
         fontSize: 14,
     },
     controls: {
@@ -548,7 +570,7 @@ const styles = StyleSheet.create({
     },
     playerSliderTime: {
         color: '#FFF',
-        fontFamily: 'MPLUS-Bold'
+        fontFamily: 'MPLUS-Bold',
     },
     playerBasicControls: {
         flex: 1,
@@ -559,4 +581,4 @@ const styles = StyleSheet.create({
 
         zIndex: 20,
     },
-})
+});

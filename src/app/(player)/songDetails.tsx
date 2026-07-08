@@ -1,4 +1,4 @@
-import { SongInterface } from '@/types/ISongInformation';
+import { Songs } from '@/types/songs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useLocalSearchParams } from 'expo-router';
 import React from 'react';
@@ -6,28 +6,31 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 export default function SongDetailsModal() {
-
     const { song } = useLocalSearchParams<{ song: string }>();
 
-    const songInfo = song ? (JSON.parse(song) as SongInterface) : null;
+    const songInfo = song ? (JSON.parse(song) as Songs) : null;
 
     if (!songInfo) {
         return (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator size={'large'} color={'#8B8B8B'}></ActivityIndicator>
+                <ActivityIndicator
+                    size={'large'}
+                    color={'#8B8B8B'}></ActivityIndicator>
             </View>
-        )
+        );
     }
 
     return (
         <Animated.View
             style={styles.extraInfo}
-            entering={FadeIn}
-        >
-            <Link dismissTo href={'/(player)'} asChild>
+            entering={FadeIn}>
+            <Link
+                dismissTo
+                href={'/(player)'}
+                asChild>
                 <Pressable style={StyleSheet.absoluteFill}></Pressable>
             </Link>
-            <Text style={[styles.extraInfoText, {alignSelf: 'flex-start', fontFamily: 'MPLUS-Bold',fontSize: 24}]}>Song details</Text>
+            <Text style={[styles.extraInfoText, { alignSelf: 'flex-start', fontFamily: 'MPLUS-Bold', fontSize: 24 }]}>Song details</Text>
             <View style={styles.extraInfoSong}>
                 <View style={styles.extraInfoSection}>
                     <Text style={styles.extraInfoTitle}>Album</Text>
@@ -46,7 +49,7 @@ export default function SongDetailsModal() {
                 <View style={styles.extraInfoPlaySection}>
                     <Text style={styles.extraInfoTitle}>Play Count</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={[styles.extraInfoText, { fontSize: 24, fontFamily: 'MPLUS-Bold', }]}>{songInfo.play_count}</Text>
+                        <Text style={[styles.extraInfoText, { fontSize: 24, fontFamily: 'MPLUS-Bold' }]}>{songInfo.play_count}</Text>
                         {/* <Icons.Ionicons name="stats-chart" size={24} color="white" /> */}
                     </View>
                 </View>
@@ -54,8 +57,22 @@ export default function SongDetailsModal() {
                     <Text style={styles.extraInfoTitle}>Rating</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                         <View style={{ flexDirection: 'row' }}>
-                            {[...Array(songInfo.rating)].map((_, index) => (<MaterialCommunityIcons name="music-note-quarter" size={24} color="white" key={`rating-music-note-${index}`} />))}
-                            {[...Array(5 - songInfo.rating)].map((_, index) => (<MaterialCommunityIcons name="music-note-half" size={24} color="#8B8B8B" key={`rating-music-note-${index}`} />))}
+                            {[...Array(songInfo.rating)].map((_, index) => (
+                                <MaterialCommunityIcons
+                                    name='music-note-quarter'
+                                    size={24}
+                                    color='white'
+                                    key={`rating-music-note-${index}`}
+                                />
+                            ))}
+                            {[...Array(5 - songInfo.rating)].map((_, index) => (
+                                <MaterialCommunityIcons
+                                    name='music-note-half'
+                                    size={24}
+                                    color='#8B8B8B'
+                                    key={`rating-music-note-${index}`}
+                                />
+                            ))}
                         </View>
                     </View>
                 </View>
@@ -63,16 +80,16 @@ export default function SongDetailsModal() {
             <View style={[styles.extraInfoPlay]}>
                 <View style={styles.extraInfoPlaySection}>
                     <Text style={styles.extraInfoTitle}>Bitrate (kbps)</Text>
-                    <Text style={[styles.extraInfoText, { fontSize: 24, fontFamily: 'MPLUS-Bold', }]}>{songInfo.bitrate}</Text>
+                    <Text style={[styles.extraInfoText, { fontSize: 24, fontFamily: 'MPLUS-Bold' }]}>{songInfo.bitrate}</Text>
                 </View>
                 <View style={styles.extraInfoPlaySection}>
                     <Text style={styles.extraInfoTitle}>Sample Rate (Hz)</Text>
-                    <Text style={[styles.extraInfoText, { fontSize: 24, fontFamily: 'MPLUS-Bold', }]}>{songInfo.sample_rate}</Text>
+                    <Text style={[styles.extraInfoText, { fontSize: 24, fontFamily: 'MPLUS-Bold' }]}>{songInfo.sample_rate}</Text>
                 </View>
             </View>
         </Animated.View>
-    )
-};
+    );
+}
 
 const styles = StyleSheet.create({
     extraInfo: {
@@ -128,6 +145,6 @@ const styles = StyleSheet.create({
     extraInfoText: {
         color: '#FFF',
         fontFamily: 'MPLUS-Regular',
-        fontSize: 14
+        fontSize: 14,
     },
 });
