@@ -1,15 +1,13 @@
 import Header from '@/components/playlist/header';
 import { SongItem } from '@/components/playlist/songItem';
-import TogglePlayer from '@/components/playlist/togglePlayer';
-import { Drawer, DrawerBackground } from '@/components/ui/drawerNavigation';
-import SearchHeader from '@/components/ui/header';
+import SearchHeader from '@/components/ui/Header';
 import { useSettings } from '@/context/appContext';
+import { Theme } from '@/theme';
 import { PlaylistInfo, PlaylistItem, PlaylistStats } from '@/types/playlists';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
-import { useSharedValue, withTiming } from 'react-native-reanimated';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, View } from 'react-native';
+import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DEFAULT_PLAYLIST = {
@@ -41,23 +39,42 @@ export default function Playlist() {
     const [playlistInfo, setPlaylistInfo] = useState<PlaylistInfo>(DEFAULT_PLAYLIST.info);
     const [playlistStats, setPlaylistStats] = useState<PlaylistStats>(DEFAULT_PLAYLIST.stats);
     const [playlistItems, setPlaylistItems] = useState<Array<PlaylistItem>>();
-    const [currentPlaylist, setCurrentPlaylist] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [headerHeight, setHeaderHeight] = useState<number>(0);
     const insets = useSafeAreaInsets();
     const transition = useSharedValue(0);
+    const isHeaderVisible = useSharedValue(1);
     const { id } = useLocalSearchParams();
-    const { server } = useSettings();
+    const { actualServer: server } = useSettings();
+    const router = useRouter();
+    const isHeaderVisibleRef = useRef(true);
+
+    const textStyle = useAnimatedStyle(() => {
+        return {
+            opacity: isHeaderVisible.value === 0 ? withTiming(1, { duration: 200 }) : withTiming(0, { duration: 200 }),
+        };
+    });
+
+    const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+
+        if (offsetY >= headerHeight && isHeaderVisibleRef.current) {
+            isHeaderVisibleRef.current = false;
+            isHeaderVisible.set(0);
+        } else if (offsetY < headerHeight && !isHeaderVisibleRef.current) {
+            isHeaderVisibleRef.current = true;
+            isHeaderVisible.set(1);
+        }
+    };
 
     const filteredData = useMemo(() => {
         if (!playlistItems) return [];
         if (!searchValue.trim()) return playlistItems;
 
-        return playlistItems.filter((song) => song.title?.toUpperCase().includes(searchValue.toUpperCase()));
+        return playlistItems.filter(
+            (song) => song.title?.toUpperCase().includes(searchValue.toUpperCase()) || song.artist?.toUpperCase().includes(searchValue.toUpperCase()),
+        );
     }, [searchValue, playlistItems]);
-
-    const handleShowDrawer = () => {
-        transition.value = withTiming(transition.value ? 0 : 1, { duration: 500 });
-    };
 
     const handlePlayItem = async (index: string) => {
         try {
@@ -103,19 +120,8 @@ export default function Playlist() {
             }
         };
 
-        const currentPlaylist = async () => {
-            try {
-                const response = await fetch(`http://${server.ip}:3553/playlist/current`);
-                const data = await response.json();
-                setCurrentPlaylist(data.id);
-            } catch (error) {
-                console.log('Error get playlist current', error);
-            }
-        };
-
         playlistInfo();
         playlistItems();
-        currentPlaylist();
         setIsLoading(false);
     }, [id, server]);
 
@@ -130,40 +136,43 @@ export default function Playlist() {
                 </View>
             ) : (
                 <>
-                    <Drawer
-                        transition={transition}
-                        currentPlaylist={currentPlaylist}
-                    />
-                    <DrawerBackground transition={transition} />
-                    <View style={[styles.container, { paddingTop: insets.top }]}>
+                    <KeyboardAvoidingView
+                        behavior='height'
+                        style={[styles.container]}>
                         <SearchHeader
                             searchBarVisible={searchbarVisible}
                             searchValue={searchValue}
                             setSearchBarVisible={setSearchbarVisible}
                             setSearchValue={setSearchValue}
-                            LeftSideIconSet={Ionicons}
-                            iconName='menu'
-                            leftSideOnPress={() => handleShowDrawer()}
+                            hasLeftAction={true}
+                            onLeftActionPress={() => router.back()}
+                            headerStyle={{ backgroundColor: Theme.colors.accent, paddingTop: insets.top, height: 60 + insets.top }}
+                            title={playlistInfo.name}
+                            titleStyle={textStyle}
                         />
                         <FlatList
                             data={filteredData}
                             keyExtractor={(item) => item.index.toString()}
                             style={{ width: '100%' }}
-                            contentContainerStyle={{ paddingBottom: 80 + insets.bottom, gap: 10 }}
+                            contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
                             initialNumToRender={10}
                             maxToRenderPerBatch={10}
                             windowSize={5}
                             showsVerticalScrollIndicator={false}
+                            onScroll={handleScroll}
+                            onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
+                            overScrollMode='never'
+                            removeClippedSubviews={true}
                             ListHeaderComponent={
                                 <Header
                                     playlistInfo={playlistInfo}
                                     playlistStats={playlistStats}
+                                    setHeaderHeight={setHeaderHeight}
                                 />
                             }
                             renderItem={renderItem}
                         />
-                        <TogglePlayer />
-                    </View>
+                    </KeyboardAvoidingView>
                 </>
             )}
         </>

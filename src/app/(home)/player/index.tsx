@@ -1,17 +1,18 @@
-import NormalButton from '@/components/player/normalButton';
 import { useAIMP } from '@/hooks/useAIMP';
 // import { useAppState } from '@/hooks/useAppState';
+import IconButton from '@/components/ui/IconButton';
 import { Songs } from '@/types/songs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { BlurTargetView, BlurView } from 'expo-blur';
 import { Image, ImageBackground } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useIsFocused, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSettings } from '../../context/appContext';
+import { useSettings } from '../../../context/appContext';
+
 const { height: screenHeight } = Dimensions.get('window');
 const defaultSong: Songs = {
     album: 'Unknown',
@@ -24,7 +25,7 @@ const defaultSong: Songs = {
     title: 'Unknown',
 };
 
-export default function Home() {
+export default function PlayerBottomSheet() {
     const [imageUri, setImageUri] = useState<string>();
     const [songInfo, setSongInfo] = useState<Songs>(defaultSong);
     const [songDuration, setSongDuration] = useState<number>(0);
@@ -38,14 +39,14 @@ export default function Home() {
     const transition = useSharedValue(0);
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { server } = useSettings();
+    const { actualServer: server, isLoaded } = useSettings();
     const targetRef = useRef<View | null>(null);
+    const { aimpEvent } = useAIMP();
+    const isFocused = useIsFocused();
 
     const showToast = (message: string) => {
         ToastAndroid.show(message, ToastAndroid.SHORT);
     };
-
-    const { aimpEvent } = useAIMP();
 
     const animatedSlider = useAnimatedStyle(() => {
         return {
@@ -147,7 +148,7 @@ export default function Home() {
         }
     };
 
-    const handleShowSlider = async () => {
+    const handleShowSlider = () => {
         setShowSlider(!showSlider);
         transition.value = withTiming(showSlider ? 0 : 1, { duration: 250 });
     };
@@ -212,6 +213,8 @@ export default function Home() {
     }, [aimpEvent.track.duration, songDuration]);
 
     useEffect(() => {
+        if (!isLoaded) return;
+
         const songCover = async () => {
             try {
                 const timestamp = new Date().getTime();
@@ -228,46 +231,38 @@ export default function Home() {
     }, [aimpEvent.track.title, aimpEvent.track.artist, server]);
 
     useEffect(() => {
-        const songCover = async () => {
+        if (!isLoaded) return;
+
+        const songInformationAndCover = async () => {
             try {
                 const timestamp = new Date().getTime();
                 const url = `http://${server.ip}:3553/track/cover?t=${timestamp}`;
+
+                const [songResponse, playerResponse] = await Promise.all([
+                    fetch(`http://${server.ip}:3553/track/info`),
+                    fetch(`http://${server.ip}:3553/player/state`),
+                ]);
+
+                const [songInfo, playerInfo] = await Promise.all([songResponse.json(), playerResponse.json()]);
                 setImageUri(url);
-            } catch {
-                showToast('Error get song cover');
+                setSongInfo(songInfo);
+                setSongDuration(Number(playerInfo.duration));
+                setRepeatState(playerInfo.repeat ? true : false);
+                setShuffleState(playerInfo.shuffle ? true : false);
+                setMuteState(playerInfo.mute ? true : false);
+                setVolumeState(Number(playerInfo.volume));
+                setPlayerState(playerInfo.state === 2 ? true : false);
+            } catch (error) {
+                showToast('Error player');
             }
         };
 
-        const songInfo = async () => {
-            try {
-                const response = await fetch(`http://${server.ip}:3553/track/info`);
-                const info = await response.json();
-
-                setSongInfo(info);
-            } catch {
-                showToast('Error get song info');
-            }
-        };
-
-        const playerStates = async () => {
-            try {
-                const response = await fetch(`http://${server.ip}:3553/player/state`);
-                const data = await response.json();
-                setSongDuration(Number(data.duration));
-                setRepeatState(data.repeat ? true : false);
-                setShuffleState(data.shuffle ? true : false);
-                setMuteState(data.mute ? true : false);
-                setVolumeState(Number(data.volume));
-                setPlayerState(data.state === 2 ? true : false);
-            } catch {
-                showToast('Error player status');
-            }
-        };
-
-        songCover();
-        songInfo();
-        playerStates();
+        songInformationAndCover();
     }, [server]);
+
+    if (!isFocused) {
+        return null;
+    }
 
     return (
         <>
@@ -290,7 +285,7 @@ export default function Home() {
                     style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: screenHeight }}
                 />
                 <View style={styles.header}>
-                    <NormalButton
+                    <IconButton
                         onPress={() => router.back()}
                         IconSet={Ionicons}
                         iconName='chevron-down'
@@ -299,8 +294,8 @@ export default function Home() {
                         <Text style={styles.headerTitle}>Playing from</Text>
                         <Text style={styles.headerSubtitle}>{server.name}</Text>
                     </View>
-                    <NormalButton
-                        onPress={() => router.navigate({ pathname: '/(player)/songDetails', params: { song: JSON.stringify(songInfo) } })}
+                    <IconButton
+                        onPress={() => router.navigate({ pathname: '/(home)/player/songDetails', params: { song: JSON.stringify(songInfo) } })}
                         IconSet={MaterialCommunityIcons}
                         iconName='dots-vertical'
                     />
@@ -337,10 +332,10 @@ export default function Home() {
                     <View style={styles.playerExtraControls}>
                         <Animated.View style={[styles.extraControlsWrapper, animatedSlider, { justifyContent: 'space-evenly', gap: 10 }]}>
                             <View style={{ flexDirection: 'column' }}>
-                                <NormalButton
+                                <IconButton
                                     onPress={() => handleShowSlider()}
                                     insideStyle={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
-                                    TextElement={
+                                    InsideElement={
                                         <>
                                             <Ionicons
                                                 name='volume-medium-outline'
@@ -361,29 +356,29 @@ export default function Home() {
                                 maximumTrackTintColor='#C6C6C6'
                                 thumbTintColor='#FFFFFF'
                                 value={volumeState}
-                                onValueChange={(e) => handleVolumeState(e)}
+                                onValueChange={(e: any) => handleVolumeState(e)}
                             />
                         </Animated.View>
                         <Animated.View style={[styles.extraControlsWrapper, animatedButtons]}>
-                            <NormalButton
+                            <IconButton
                                 onPress={() => handleRepeatState()}
                                 IconSet={Ionicons}
                                 iconName='repeat'
                                 iconColor={repeatState ? 'white' : '#8b8b8b'}
                             />
-                            <NormalButton
+                            <IconButton
                                 onPress={() => handleShuffleState()}
                                 IconSet={Ionicons}
                                 iconName='shuffle'
                                 iconColor={shuffleState ? 'white' : '#8b8b8b'}
                             />
-                            <NormalButton
+                            <IconButton
                                 onPress={() => handleMuteState()}
                                 IconSet={Ionicons}
                                 iconName='volume-mute-outline'
                                 iconColor={muteState ? 'white' : '#8b8b8b'}
                             />
-                            <NormalButton
+                            <IconButton
                                 onPress={() => handleShowSlider()}
                                 IconSet={Ionicons}
                                 iconName='volume-medium-outline'
@@ -401,18 +396,18 @@ export default function Home() {
                             maximumTrackTintColor='#C6C6C6'
                             thumbTintColor='#FFFFFF'
                             value={songPosition}
-                            onValueChange={(e) => handleSongPosition(e)}
+                            onValueChange={(e: any) => handleSongPosition(e)}
                         />
                         <Text style={styles.playerSliderTime}>{new Date(songDuration).toISOString().slice(14, 19)}</Text>
                     </View>
                     <View style={styles.playerBasicControls}>
-                        <NormalButton
+                        <IconButton
                             rippleColor='rgba(139, 139, 139, 0.5)'
                             onPress={() => handlePreviousTrack()}
                             IconSet={Ionicons}
                             iconName='play-skip-back'
                         />
-                        <NormalButton
+                        <IconButton
                             rippleColor='rgba(139, 139, 139, 0.5)'
                             onPress={() => handlePause()}
                             containerStyle={{ width: 60, height: 60, borderColor: '#FFF', borderWidth: 2 }}
@@ -420,7 +415,7 @@ export default function Home() {
                             iconName={playerState ? 'pause' : 'play'}
                             iconSize={36}
                         />
-                        <NormalButton
+                        <IconButton
                             rippleColor='rgba(139, 139, 139, 0.5)'
                             onPress={() => handleNextTrack()}
                             IconSet={Ionicons}
@@ -429,7 +424,6 @@ export default function Home() {
                     </View>
                 </View>
             </View>
-            {/* <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: '#252525', filter: [{ opacity: 0.5 }] }} /> */}
         </>
     );
 }
@@ -440,7 +434,7 @@ const styles = StyleSheet.create({
 
         width: '100%',
         height: '100%',
-        // backgroundColor: '#FFF',
+        backgroundColor: '#FFF',
     },
     header: {
         width: '100%',

@@ -26,7 +26,7 @@ export default function SongDetailsModal() {
             entering={FadeIn}>
             <Link
                 dismissTo
-                href={'/(player)'}
+                href={'/(home)/player'}
                 asChild>
                 <Pressable style={StyleSheet.absoluteFill}></Pressable>
             </Link>
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     extraInfo: {
         width: '100%',
         height: '100%',
-        backgroundColor: 'rgba(12, 12, 12, 0.9)',
+        backgroundColor: 'rgba(12, 12, 12, 0.5)',
         paddingHorizontal: 20,
 
         flexDirection: 'column',
