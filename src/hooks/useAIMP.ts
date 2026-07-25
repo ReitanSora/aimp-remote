@@ -1,5 +1,5 @@
 import { useSettings } from '@/context/appContext';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ToastAndroid } from 'react-native';
 
 export const useAIMP = () => {
@@ -27,7 +27,7 @@ export const useAIMP = () => {
     });
     // const ws = useRef(null);
 
-    const { server } = useSettings();
+    const { actualServer: server } = useSettings();
 
     const showToast = (message: string) => {
         ToastAndroid.show(message, ToastAndroid.SHORT);
@@ -37,25 +37,25 @@ export const useAIMP = () => {
         const socket = new WebSocket(`ws://${server.ip}:3554`);
 
         socket.onopen = () => {
-            setAimpEvent((prev) => ({ ...prev, status: "connected" }));
-        }
+            setAimpEvent((prev) => ({ ...prev, status: 'connected' }));
+        };
 
         socket.onmessage = (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            setAimpEvent((prev) => ({
-              ...prev,
-              ...(data.event === "mute_changed" && { muteState: data.mute }),
-              ...(data.event === "player_state" && { playerState: data.state }),
-              ...(data.event === "position" && { position: data.position }),
-              ...(data.event === "repeat_changed" && { repeatState: data.repeat }),
-              ...(data.event === "shuffle_changed" && { shuffleState: data.shuffle }),
-              ...(data.event === "track_changed" && { track: data }),
-              ...(data.event === "volume_changed" && { volumeState: data.volume }),
-            }));
-          } catch {
-            showToast('Error parsing websocket');
-          }
+            try {
+                const data = JSON.parse(e.data);
+                setAimpEvent((prev) => ({
+                    ...prev,
+                    ...(data.event === 'mute_changed' && { muteState: data.mute }),
+                    ...(data.event === 'player_state' && { playerState: data.state }),
+                    ...(data.event === 'position' && { position: data.position }),
+                    ...(data.event === 'repeat_changed' && { repeatState: data.repeat }),
+                    ...(data.event === 'shuffle_changed' && { shuffleState: data.shuffle }),
+                    ...(data.event === 'track_changed' && { track: data }),
+                    ...(data.event === 'volume_changed' && { volumeState: data.volume }),
+                }));
+            } catch {
+                showToast('Error parsing websocket');
+            }
         };
 
         socket.onerror = (e) => {
