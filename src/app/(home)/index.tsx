@@ -103,7 +103,7 @@ export default function Home() {
                                 keyExtractor={(item: Playlists) => item.id}
                                 numColumns={2}
                                 columnWrapperStyle={{ gap: 20 }}
-                                contentContainerStyle={{ width: '100%', padding: 20, paddingBottom: insets.bottom + 80, gap: 20 }}
+                                contentContainerStyle={{ width: '100%', padding: 20, paddingBottom: insets.bottom + 100, gap: 20 }}
                                 style={{ width: '100%' }}
                                 renderItem={({ item, index }) => {
                                     return (

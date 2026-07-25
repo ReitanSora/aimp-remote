@@ -31,7 +31,7 @@ export default function TogglePlayer() {
     const [songDuration, setSongDuration] = useState<number>(0);
     const { aimpEvent } = useAIMP();
     const router = useRouter();
-    const { actualServer: server, isLoaded } = useSettings();
+    const { actualServer, isLoaded } = useSettings();
     const progress = useSharedValue(0);
 
     const handlePlayerVisible = () => {
@@ -44,7 +44,7 @@ export default function TogglePlayer() {
 
     const handlePause = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/playpause`, {
+            const response = await fetch(`http://${actualServer.ip}:3553/player/playpause`, {
                 method: 'POST',
             });
             await response.json();
@@ -61,11 +61,11 @@ export default function TogglePlayer() {
     }, [aimpEvent.playerState]);
 
     const mappedValue = useDerivedValue(() => {
-        return ~~interpolate(progress.value, [0, songDuration], [0, 157], Extrapolation.CLAMP);
+        return ~~interpolate(progress.value, [0, songDuration], [0, 156], Extrapolation.CLAMP);
     }, [songDuration]);
 
     const animatedProps = useAnimatedProps(() => ({
-        strokeDashoffset: 157 - mappedValue.value,
+        strokeDashoffset: 156 - mappedValue.value,
     }));
 
     useEffect(() => {
@@ -93,7 +93,7 @@ export default function TogglePlayer() {
 
         const songInfo = async () => {
             try {
-                const response = await fetch(`http://${server.ip}:3553/track/info`);
+                const response = await fetch(`http://${actualServer.ip}:3553/track/info`);
                 const info = await response.json();
 
                 setSongInfo(info);
@@ -104,7 +104,7 @@ export default function TogglePlayer() {
 
         const playerState = async () => {
             try {
-                const response = await fetch(`http://${server.ip}:3553/player/state`);
+                const response = await fetch(`http://${actualServer.ip}:3553/player/state`);
                 const data = await response.json();
                 setIsPlaying(data.state === 2 ? true : false);
                 setSongDuration(data.duration);
@@ -115,7 +115,7 @@ export default function TogglePlayer() {
 
         songInfo();
         playerState();
-    }, [server]);
+    }, [actualServer]);
 
     return (
         <>
@@ -135,7 +135,7 @@ export default function TogglePlayer() {
                                     stroke={Theme.colors.accent}
                                     strokeWidth={5}
                                     fill={'transparent'}
-                                    strokeDasharray={157}
+                                    strokeDasharray={156}
                                     animatedProps={animatedProps}
                                     strokeLinecap={'round'}
                                     transform={'rotate(-90, 40, 40)'}
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 20,
+        gap: 10,
     },
     songInfo: {
         flex: 1,
