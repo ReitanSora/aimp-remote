@@ -1,12 +1,14 @@
-import { useSettings } from '@/context/appContext';
+import { Theme } from '@/theme';
 import { PlaylistDetailsHeader } from '@/types/playlists';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-export default function Header({ playlistInfo, playlistStats }: PlaylistDetailsHeader) {
-    const { appColor } = useSettings();
+interface PlaylistHeaderProps extends PlaylistDetailsHeader {
+    setHeaderHeight?: (value: number) => void;
+}
 
+export default function Header({ playlistInfo, playlistStats, setHeaderHeight = () => {} }: PlaylistHeaderProps) {
     function formatTime(totalSeconds: number): string {
         if (totalSeconds <= 0) return '0 segundos';
 
@@ -49,16 +51,20 @@ export default function Header({ playlistInfo, playlistStats }: PlaylistDetailsH
     const fixedSize = formatBytes(playlistStats?.total_size_bytes);
 
     return (
-        <View style={styles.playlistInfo}>
+        <View
+            style={styles.playlistInfo}
+            onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
             <View
                 style={[
                     styles.gradientBox,
                     {
-                        experimental_backgroundImage: `linear-gradient(180deg, ${appColor} , transparent)`,
+                        experimental_backgroundImage: `linear-gradient(180deg, ${Theme.colors.accent} 25%, transparent)`,
                     },
                 ]}
             />
-            <Text style={[styles.infoText, { color: '#FFF', fontSize: 24, fontFamily: 'MPLUS-ExtraBold' }]}>{playlistInfo?.name}</Text>
+            <Text style={[styles.infoText, { color: '#FFF', fontSize: Theme.fontSize.title, fontFamily: Theme.fontFamily.condensed }]}>
+                {playlistInfo?.name}
+            </Text>
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}>
@@ -147,12 +153,11 @@ const styles = StyleSheet.create({
         width: '100%',
         // backgroundColor: '#FFF',
         marginBottom: 40,
-        paddingHorizontal: 20,
-        paddingVertical: 20,
+        padding: 20,
 
         alignItems: 'flex-start',
         justifyContent: 'flex-end',
-        gap: 40,
+        gap: 20,
     },
     gradientBox: {
         position: 'absolute',
@@ -173,7 +178,7 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     infoPill: {
-        backgroundColor: '#363636',
+        backgroundColor: Theme.colors.darkGray,
         paddingHorizontal: 10,
         paddingVertical: 5,
 

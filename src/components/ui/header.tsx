@@ -1,32 +1,44 @@
+import { Theme } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TextStyle, View, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import NormalButton from '../player/normalButton';
+import IconButton from './IconButton';
 
 interface HeaderProps {
     searchBarVisible?: boolean;
     searchValue?: string;
     setSearchBarVisible?: (value: boolean) => void;
     setSearchValue?: (value: string) => void;
-    leftSideOnPress: () => void;
-    LeftSideIconSet: React.ElementType;
-    iconName: string;
-    iconSize?: number;
-    iconColor?: string;
+    hasLeftAction?: boolean;
+    headerStyle?: ViewStyle;
+    onLeftActionPress?: () => void;
     title?: string;
+    titleStyle?: TextStyle;
+}
+
+interface NormalHeaderProps {
+    children?: React.ReactNode;
+    containerStyle?: ViewStyle;
+    hasLeftAction?: boolean;
+    hasFilter: boolean;
+    title: string;
+    titleStyle?: TextStyle;
+    onLeftActionPress?: () => void;
+    rightHeaderStyle?: ViewStyle;
+    subtitle?: string;
 }
 
 export default function SearchHeader({
+    hasLeftAction,
+    headerStyle,
+    onLeftActionPress = () => {},
     searchBarVisible,
     setSearchBarVisible = () => {},
     searchValue,
     setSearchValue = () => {},
-    leftSideOnPress,
-    LeftSideIconSet,
-    iconName,
-    iconSize,
-    iconColor,
+    title,
+    titleStyle,
 }: HeaderProps) {
     const transition = useSharedValue(0);
 
@@ -38,9 +50,9 @@ export default function SearchHeader({
         };
     });
 
-    const animatedNormalHeader = useAnimatedStyle(() => {
+    const animatedTitle = useAnimatedStyle(() => {
         return {
-            opacity: 1 - transition.value,
+            // opacity: 1 - transition.value,
             transform: [{ scale: 1 - transition.value * 0.1 }],
             zIndex: transition.value < 1 ? 0 : -1,
         };
@@ -58,121 +70,185 @@ export default function SearchHeader({
     };
 
     return (
-        <View style={styles.header}>
-            <Animated.View
-                pointerEvents={searchBarVisible ? 'none' : 'auto'}
-                style={[styles.normalWrapper, animatedNormalHeader]}>
-                <NormalButton
-                    rippleColor='rgba(139, 139, 139, 0.5)'
-                    onPress={() => leftSideOnPress()}
-                    IconSet={LeftSideIconSet}
-                    iconName={iconName}
-                    iconSize={iconSize}
-                    iconColor={iconColor}
-                />
-                <NormalButton
-                    rippleColor='rgba(139, 139, 139, 0.5)'
-                    onPress={() => handleShowSearchbar()}
-                    IconSet={Ionicons}
-                    iconName='search'
-                />
-            </Animated.View>
-            <Animated.View
-                pointerEvents={searchBarVisible ? 'auto' : 'none'}
-                style={[styles.searchbarWrapper, animatedSearchbar]}>
-                <View style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons
-                        name='search'
-                        size={24}
-                        color='white'
+        <View style={[styles.header, headerStyle]}>
+            <View style={styles.headerLeft}>
+                {hasLeftAction && (
+                    <IconButton
+                        onPress={onLeftActionPress}
+                        IconSet={Ionicons}
+                        iconName='chevron-back'
+                        iconColor={Theme.colors.white}
                     />
-                </View>
-                <TextInput
-                    style={styles.input}
-                    placeholder='Search'
-                    placeholderTextColor={'#8B8B8B'}
-                    cursorColor={'#8B8B8B'}
-                    selectionColor={'#8B8B8B'}
-                    selectionHandleColor={'#8B8B8B'}
-                    value={searchValue}
-                    onChangeText={(newText) => setSearchValue(newText)}
-                />
-                <NormalButton
-                    rippleColor='transparent'
-                    onPress={() => handleCloseSearchbar()}
-                    IconSet={Ionicons}
-                    iconName='close'
-                />
-            </Animated.View>
+                )}
+                {searchBarVisible ? (
+                    <Animated.View style={[styles.searchbarWrapper, animatedSearchbar]}>
+                        <Ionicons
+                            name='search'
+                            size={24}
+                            color='white'
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Search'
+                            placeholderTextColor={'#8B8B8B'}
+                            cursorColor={'#8B8B8B'}
+                            selectionColor={'#8B8B8B'}
+                            selectionHandleColor={'#8B8B8B'}
+                            autoCapitalize='none'
+                            autoFocus={true}
+                            autoCorrect={false}
+                            spellCheck={false}
+                            value={searchValue}
+                            onChangeText={(newText) => setSearchValue(newText)}
+                        />
+                    </Animated.View>
+                ) : (
+                    <Animated.Text style={[styles.headerTitle, animatedTitle, titleStyle]}>{title}</Animated.Text>
+                )}
+            </View>
+            <View style={styles.headerRight}>
+                <Animated.View style={[styles.buttons]}>
+                    {searchBarVisible ? (
+                        <IconButton
+                            onPress={() => handleCloseSearchbar()}
+                            IconSet={Ionicons}
+                            iconName='close'
+                        />
+                    ) : (
+                        <IconButton
+                            onPress={() => handleShowSearchbar()}
+                            IconSet={Ionicons}
+                            iconName='search'
+                        />
+                    )}
+                </Animated.View>
+            </View>
         </View>
     );
 }
 
-export function NormalHeader({ iconName, iconSize, iconColor, leftSideOnPress, LeftSideIconSet, title }: HeaderProps) {
+export function StaticHeader({
+    children,
+    containerStyle,
+    hasFilter,
+    hasLeftAction = true,
+    onLeftActionPress = () => {},
+    subtitle,
+    title,
+    titleStyle,
+    rightHeaderStyle,
+}: NormalHeaderProps) {
     return (
-        <View style={styles.header}>
-            <View style={[styles.normalWrapper, { alignItems: 'center', justifyContent: 'flex-start', gap: 20 }]}>
-                <NormalButton
-                    rippleColor='rgba(139, 139, 139, 0.5)'
-                    onPress={() => leftSideOnPress()}
-                    IconSet={LeftSideIconSet}
-                    iconName={iconName}
-                    iconSize={iconSize}
-                    iconColor={iconColor}
-                />
-                <Text style={styles.title}>{title}</Text>
+        <View style={[styles.header, containerStyle]}>
+            <View style={[styles.headerLeft]}>
+                {hasLeftAction && (
+                    <IconButton
+                        onPress={onLeftActionPress}
+                        IconSet={Ionicons}
+                        iconName='chevron-back'
+                        iconColor={Theme.colors.lightGray}
+                    />
+                )}
+                <View style={styles.headerText}>
+                    {title && (
+                        <Animated.Text
+                            numberOfLines={1}
+                            lineBreakMode='tail'
+                            style={[styles.headerTitle, titleStyle]}>
+                            {title}
+                        </Animated.Text>
+                    )}
+                    {subtitle && (
+                        <Text
+                            numberOfLines={1}
+                            lineBreakMode='tail'
+                            style={styles.headerTextSubtitle}>
+                            {subtitle}
+                        </Text>
+                    )}
+                </View>
             </View>
+            {hasFilter && (
+                <View style={[styles.headerRight, { width: 48 }, rightHeaderStyle]}>
+                    <View style={[styles.headerButtons]}>{children}</View>
+                </View>
+            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     header: {
-        position: 'relative',
-
         width: '100%',
         height: 60,
         paddingHorizontal: 20,
-        // backgroundColor: '#c6c6c6',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 10,
     },
-    normalWrapper: {
-        position: 'absolute',
-
-        width: '100%',
-        height: 50,
-
+    headerLeft: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
+        gap: 10,
+    },
+    headerRight: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTitle: {
+        fontSize: Theme.fontSize.title,
+        fontFamily: Theme.fontFamily.bold,
+        color: Theme.colors.white,
+    },
+    headerText: {
+        flex: 1,
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+    },
+    headerTextTitle: {
+        fontSize: Theme.fontSize.title,
+        fontWeight: 'bold',
+        color: Theme.colors.lightGray,
+    },
+    headerTextSubtitle: {
+        fontSize: Theme.fontSize.paragraph,
+        color: Theme.colors.gray,
+    },
+    headerButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
     },
     searchbarWrapper: {
-        position: 'absolute',
-
-        width: '100%',
-        height: 40,
-        backgroundColor: '#363636',
+        flex: 1,
+        height: 48,
+        backgroundColor: Theme.colors.darkGray,
         paddingHorizontal: 20,
-        // paddingVertical: 5,
 
         flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        gap: 10,
 
         borderRadius: 20,
     },
+    buttons: {
+        flexDirection: 'row',
+    },
     input: {
-        // backgroundColor: '#C6C6C6',
-        height: 50,
-        marginLeft: 10,
-
-        flex: 1,
-
-        color: '#FFF',
+        fontSize: Theme.fontSize.subtitle,
         fontFamily: 'MPLUS-Regular',
-        fontSize: 14,
+
+        color: Theme.colors.lightGray,
+        flex: 1,
+        height: '100%',
+
+        textAlignVertical: 'center',
     },
     title: {
         color: '#FFF',

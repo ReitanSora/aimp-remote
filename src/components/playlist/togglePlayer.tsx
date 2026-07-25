@@ -1,12 +1,15 @@
+import { MAX_WIDTH } from '@/constants';
 import { useSettings } from '@/context/appContext';
 import { useAIMP } from '@/hooks/useAIMP';
+import { Theme } from '@/theme';
 import { Songs } from '@/types/songs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, ToastAndroid, TouchableNativeFeedback, View } from 'react-native';
-import NormalButton from '../player/normalButton';
-import SoundWave from '../player/soundWave';
+import { Pressable, StyleSheet, Text, ToastAndroid, View } from 'react-native';
+import Animated, { Extrapolation, interpolate, useAnimatedProps, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
+import IconButton from '../ui/IconButton';
 
 const defaultSong: Songs = {
     album: 'Unknown',
@@ -19,12 +22,21 @@ const defaultSong: Songs = {
     title: 'Unknown',
 };
 
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 export default function TogglePlayer() {
     const [songInfo, setSongInfo] = useState<Songs>(defaultSong);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const [playerVisible, setPlayerVisible] = useState<boolean>(false);
+    const [songDuration, setSongDuration] = useState<number>(0);
     const { aimpEvent } = useAIMP();
     const router = useRouter();
-    const { server, appColor } = useSettings();
+    const { actualServer: server, isLoaded } = useSettings();
+    const progress = useSharedValue(0);
+
+    const handlePlayerVisible = () => {
+        router.navigate('/(home)/player');
+    };
 
     const showToast = (message: string) => {
         ToastAndroid.show(message, ToastAndroid.SHORT);
@@ -48,6 +60,18 @@ export default function TogglePlayer() {
         if (aimpEvent.playerState !== 2) setIsPlaying(false);
     }, [aimpEvent.playerState]);
 
+    const mappedValue = useDerivedValue(() => {
+        return ~~interpolate(progress.value, [0, songDuration], [0, 157], Extrapolation.CLAMP);
+    }, [songDuration]);
+
+    const animatedProps = useAnimatedProps(() => ({
+        strokeDashoffset: 157 - mappedValue.value,
+    }));
+
+    useEffect(() => {
+        progress.value = withTiming(aimpEvent.position);
+    }, [aimpEvent.position]);
+
     useEffect(() => {
         if (aimpEvent.track.album !== '') {
             setSongInfo({
@@ -60,10 +84,13 @@ export default function TogglePlayer() {
                 sample_rate: Number(aimpEvent.track.sample_rate),
                 title: aimpEvent.track.title,
             });
+            setSongDuration(Math.trunc(aimpEvent.track.duration * 1000));
         }
     }, [aimpEvent.track]);
 
     useEffect(() => {
+        if (!isLoaded) return;
+
         const songInfo = async () => {
             try {
                 const response = await fetch(`http://${server.ip}:3553/track/info`);
@@ -80,6 +107,7 @@ export default function TogglePlayer() {
                 const response = await fetch(`http://${server.ip}:3553/player/state`);
                 const data = await response.json();
                 setIsPlaying(data.state === 2 ? true : false);
+                setSongDuration(data.duration);
             } catch {
                 showToast('Error toggle player state');
             }
@@ -90,50 +118,57 @@ export default function TogglePlayer() {
     }, [server]);
 
     return (
-        <View style={[styles.playerToggle, { backgroundColor: appColor }]}>
-            <TouchableNativeFeedback
-                background={TouchableNativeFeedback.Ripple('rgba(139, 139, 139, 0.5)', false)}
-                useForeground
-                onPress={() => router.navigate('/(player)')}>
-                <View style={styles.toggleInside}>
-                    <View style={styles.leftContentToggle}>
-                        <View style={styles.soundWave}>
-                            <SoundWave
-                                wavesContainerGap={2}
-                                waveWidth={4}
-                                waveHeightOdd={20}
-                                waveHeightEven={25}
-                                waveBackground='#FFF'
-                                animate={isPlaying ? true : false}
+        <>
+            <View style={[styles.playerToggle]}>
+                <Pressable
+                    android_ripple={{ color: Theme.colors.ripple, borderless: false, foreground: true }}
+                    onPress={handlePlayerVisible}>
+                    <View style={[styles.toggleInside, { backgroundColor: Theme.colors.lightBlack }]}>
+                        <View style={styles.leftContentToggle}>
+                            <Svg
+                                height='80'
+                                width='65'>
+                                <AnimatedCircle
+                                    cx={40}
+                                    cy={35}
+                                    r={25}
+                                    stroke={Theme.colors.accent}
+                                    strokeWidth={5}
+                                    fill={'transparent'}
+                                    strokeDasharray={157}
+                                    animatedProps={animatedProps}
+                                    strokeLinecap={'round'}
+                                    transform={'rotate(-90, 40, 40)'}
+                                />
+                            </Svg>
+                            <IconButton
+                                containerStyle={{ position: 'absolute', left: 15, top: 20, width: 40, height: 40 }}
+                                insideStyle={{ backgroundColor: Theme.colors.white }}
+                                onPress={handlePause}
+                                IconSet={MaterialCommunityIcons}
+                                iconName={isPlaying ? 'pause' : 'play'}
+                                iconSize={36}
+                                iconColor={Theme.colors.lightBlack}
                             />
-                        </View>
-                        <View style={styles.songInfo}>
-                            <Text
-                                style={[styles.text, { fontFamily: 'MPLUS-Bold' }]}
-                                numberOfLines={1}
-                                ellipsizeMode='tail'>
-                                {songInfo.title}
-                            </Text>
-                            <Text
-                                style={[styles.text, { color: appColor === '#8B8B8B' ? '#FFF' : '#C6C6C6', fontSize: 14 }]}
-                                numberOfLines={1}
-                                ellipsizeMode='tail'>
-                                {songInfo.artist}
-                            </Text>
+                            <View style={styles.songInfo}>
+                                <Text
+                                    style={[styles.text, { fontFamily: 'MPLUS-Bold' }]}
+                                    numberOfLines={1}
+                                    ellipsizeMode='tail'>
+                                    {songInfo.title}
+                                </Text>
+                                <Text
+                                    style={[styles.text, { color: Theme.colors.lightGray, fontSize: 12 }]}
+                                    numberOfLines={1}
+                                    ellipsizeMode='tail'>
+                                    {songInfo.artist}
+                                </Text>
+                            </View>
                         </View>
                     </View>
-                    <View style={styles.songControl}>
-                        <NormalButton
-                            rippleColor='rgba(139, 139, 139, 0.5)'
-                            onPress={handlePause}
-                            IconSet={MaterialCommunityIcons}
-                            iconName={isPlaying ? 'pause' : 'play'}
-                            iconSize={36}
-                        />
-                    </View>
-                </View>
-            </TouchableNativeFeedback>
-        </View>
+                </Pressable>
+            </View>
+        </>
     );
 }
 
@@ -144,70 +179,41 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
 
-        width: '100%',
+        width: MAX_WIDTH - 30,
         height: 80,
-        backgroundColor: '#363636',
+        marginHorizontal: 15,
 
         overflow: 'hidden',
 
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        borderRadius: 40,
+        borderWidth: 1,
+        borderColor: Theme.colors.gray,
 
         elevation: 5,
     },
     toggleInside: {
         width: '100%',
         height: '100%',
-        padding: 20,
+        padding: 10,
 
-        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
     },
     leftContentToggle: {
-        paddingRight: 20,
-
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 20,
-    },
-    soundWave: {
-        width: 60,
-        height: 60,
-
-        alignItems: 'center',
         justifyContent: 'center',
+        gap: 20,
     },
     songInfo: {
         flex: 1,
         alignItems: 'flex-start',
         justifyContent: 'center',
     },
-    songControl: {
-        width: 50,
-        // backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     text: {
         color: '#FFF',
         fontFamily: 'MPLUS-Regular',
         fontSize: 14,
-    },
-    playState: {
-        position: 'absolute',
-        top: 10,
-        right: 10,
-
-        width: 5,
-        height: 5,
-        backgroundColor: '#C6C6C6',
-
-        alignItems: 'center',
-        justifyContent: 'center',
-
-        borderRadius: 5,
     },
 });

@@ -1,6 +1,7 @@
+import { Theme } from '@/theme';
 import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import NormalButton from '../player/normalButton';
+import IconButton from '../ui/IconButton';
 
 interface SongItemProps {
     item: object | any;
@@ -11,24 +12,23 @@ export const SongItem = memo(
     function PlaylistItem({ item, onPress }: SongItemProps) {
         return (
             <>
-                <NormalButton
-                    rippleColor='rgba(139, 139, 139, 0.5)'
+                <IconButton
                     onPress={onPress}
-                    containerStyle={{ width: '100%', height: 60 }}
+                    containerStyle={{ width: '100%', height: 80, borderRadius: 0 }}
                     insideStyle={{ paddingHorizontal: 20, gap: 20, justifyContent: 'flex-start' }}
-                    TextElement={
+                    InsideElement={
                         <View style={styles.playlistItem}>
                             <View style={styles.leftSide}>
                                 <Text style={styles.playlistText}>{Number(item.index) + 1}</Text>
                                 <View style={{ flex: 1 }}>
                                     <Text
-                                        style={[styles.playlistText, { fontFamily: 'MPLUS-Bold' }]}
+                                        style={[styles.playlistText, { fontFamily: Theme.fontFamily.medium }]}
                                         numberOfLines={1}
                                         ellipsizeMode='tail'>
                                         {item.title}
                                     </Text>
                                     <Text
-                                        style={[styles.playlistText, { color: '#8B8B8B', fontSize: 12 }]}
+                                        style={[styles.playlistText, { color: Theme.colors.gray, fontSize: Theme.fontSize.paragraph }]}
                                         numberOfLines={1}
                                         ellipsizeMode='tail'>
                                         {item.artist}
@@ -67,12 +67,11 @@ const styles = StyleSheet.create({
     playlistText: {
         color: '#FFF',
         fontFamily: 'MPLUS-Regular',
-        fontSize: 16,
+        fontSize: Theme.fontSize.subtitle,
     },
     separator: {
         width: '100%',
         height: 1,
         backgroundColor: '#252525',
-        marginTop: 10,
     },
 });
