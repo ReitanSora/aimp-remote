@@ -1,41 +1,41 @@
 {
   "expo": {
     "name": "Fluke",
-    "slug": "fluke-aimp-remote",
+    "slug": "fluke",
     "version": "1.2.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/adaptive-icon-color.png",
-    "scheme": "flukeaimpremote",
+    "icon": "./assets/icons/android-adaptive-icon-color.png",
+    "scheme": "fluke",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#363636",
-        "foregroundImage": "./assets/icons/adaptive-icon-color.png",
-        "monochromeImage": "./assets/icons/adaptive-icon.png"
+        "backgroundColor": "#121212",
+        "foregroundImage": "./assets/icons/android-adaptive-icon-color.png",
+        "monochromeImage": "./assets/icons/android-adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.reitansora.flukeaimpremote"
+      "package": "com.reitansora.fluke",
+      "softwareKeyboardLayoutMode": "pan"
     },
     "primaryColor": "#FFFFFF",
     "web": {
       "output": "static",
-      "favicon": "./assets/icons/adaptive-icon-color.png"
+      "favicon": "./assets/icons/android-adaptive-icon-color.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash/splash-icon-dark.png",
+          "image": "./assets/splash/splash-icon-light.png",
           "backgroundColor": "#ffffff",
           "dark": {
             "backgroundColor": "#000000",
-            "image": "./assets/splash/splash-icon-light.png"
+            "image": "./assets/splash/splash-icon-dark.png"
           },
-          "imageWidth": 200,
           "resizeMode": "contain"
         }
       ],
@@ -59,7 +59,14 @@
           }
         }
       ],
-      "expo-image"
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
