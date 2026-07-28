@@ -13,7 +13,7 @@ export const Theme = {
     fontSize: {
         title: 24,
         subtitle: 16,
-        paragraph: 12,
+        paragraph: 14,
         tiny: 10,
     },
     fontFamily: {
