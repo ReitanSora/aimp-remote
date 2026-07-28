@@ -3,9 +3,9 @@ import IconButton from '@/components/ui/IconButton';
 import { Theme } from '@/theme';
 import { Playlists } from '@/types/playlists';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, StyleSheet, Text, ToastAndroid, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, KeyboardAvoidingView, RefreshControl, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '../../context/appContext';
@@ -19,6 +19,7 @@ export default function Home() {
     const [currentPlaylist, setCurrentPlaylist] = useState<string>('');
     const [searchbarVisible, setSearchbarVisible] = useState<boolean>(false);
     const [searchValue, setSearchValue] = useState<string>('');
+    const [refreshing, setRefreshing] = useState<boolean>(false);
     const transition = useSharedValue(0);
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -48,6 +49,34 @@ export default function Home() {
         return playlists.filter((playlist) => playlist.name.toUpperCase().includes(searchValue.toUpperCase()));
     }, [searchValue, playlists]);
 
+    const getPlaylists = useCallback(async () => {
+        try {
+            if (actualServer.ip === '127.0.0.1') {
+                setPlaylists([]);
+                return;
+            }
+
+            const response = await fetch(`http://${actualServer.ip}:3553/playlist/list`);
+            const info = await response.json();
+
+            setPlaylists(info);
+        } catch (e) {
+            showToast('Error get playlists');
+        }
+    }, [actualServer]);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await getPlaylists();
+        setRefreshing(false);
+    }, [getPlaylists]);
+
+    useFocusEffect(
+        useCallback(() => {
+            onRefresh();
+        }, [onRefresh]),
+    );
+
     useEffect(() => {
         const check = () => {
             if (isOnboarded) {
@@ -56,33 +85,6 @@ export default function Home() {
         };
     }, []);
 
-    useEffect(() => {
-        const playlistInfo = async () => {
-            try {
-                const response = await fetch(`http://${actualServer.ip}:3553/playlist/list`);
-                const info = await response.json();
-
-                setPlaylists(info);
-            } catch (e) {
-                // showToast('Error get playlist info');
-                console.log(e);
-            }
-        };
-
-        const currentPlaylist = async () => {
-            try {
-                const response = await fetch(`http://${actualServer.ip}:3553/playlist/current`);
-                const data = await response.json();
-                setCurrentPlaylist(data.id);
-            } catch (e) {
-                // showToast('Error get current playlist');
-                console.log(e);
-            }
-        };
-
-        playlistInfo();
-        currentPlaylist();
-    }, [actualServer]);
     return (
         <>
             {!isOnboarded ? (
@@ -103,8 +105,23 @@ export default function Home() {
                                 keyExtractor={(item: Playlists) => item.id}
                                 numColumns={2}
                                 columnWrapperStyle={{ gap: 20 }}
-                                contentContainerStyle={{ width: '100%', padding: 20, paddingBottom: insets.bottom + 100, gap: 20 }}
+                                contentContainerStyle={{ width: '100%', padding: 20, paddingBottom: insets.bottom + 90, gap: 20 }}
                                 style={{ width: '100%' }}
+                                ListEmptyComponent={
+                                    <View style={styles.emptyElementContainer}>
+                                        <Text style={[styles.text, { fontFamily: Theme.fontFamily.bold }]}>
+                                            Connect to a server to show your playlists here
+                                        </Text>
+                                    </View>
+                                }
+                                refreshControl={
+                                    <RefreshControl
+                                        refreshing={refreshing}
+                                        onRefresh={onRefresh}
+                                        colors={[Theme.colors.lightBlack]}
+                                        progressBackgroundColor={Theme.colors.accent}
+                                    />
+                                }
                                 renderItem={({ item, index }) => {
                                     return (
                                         <IconButton
@@ -156,6 +173,17 @@ const styles = StyleSheet.create({
 
         alignItems: 'center',
         justifyContent: 'flex-start',
+    },
+    //Empty Elementt Styles
+    emptyElementContainer: {
+        width: '100%',
+        height: 100,
+        backgroundColor: Theme.colors.lightBlack,
+
+        alignItems: 'center',
+        justifyContent: 'center',
+
+        borderRadius: 20,
     },
     //Content Styles
     content: {
