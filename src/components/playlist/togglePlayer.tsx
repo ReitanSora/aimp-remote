@@ -22,17 +22,28 @@ const defaultSong: Songs = {
     title: 'Unknown',
 };
 
+const noServer: Songs = {
+    album: 'Unknown',
+    artist: 'Verify your server',
+    bitrate: 0,
+    genre: 'Unknown',
+    play_count: 0,
+    rating: 0,
+    sample_rate: 0,
+    title: 'Server unreacheable',
+};
+
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function TogglePlayer() {
     const [songInfo, setSongInfo] = useState<Songs>(defaultSong);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
-    const [playerVisible, setPlayerVisible] = useState<boolean>(false);
     const [songDuration, setSongDuration] = useState<number>(0);
     const { aimpEvent } = useAIMP();
     const router = useRouter();
     const { actualServer, isLoaded } = useSettings();
     const progress = useSharedValue(0);
+    const enableButton = actualServer.ip === '127.0.0.1' ? false : true;
 
     const handlePlayerVisible = () => {
         router.navigate('/(home)/player');
@@ -91,30 +102,29 @@ export default function TogglePlayer() {
     useEffect(() => {
         if (!isLoaded) return;
 
-        const songInfo = async () => {
+        const toggleInfo = async () => {
             try {
-                const response = await fetch(`http://${actualServer.ip}:3553/track/info`);
-                const info = await response.json();
+                if (actualServer.ip === '127.0.0.1') {
+                    setSongInfo(noServer);
+                    return;
+                }
 
-                setSongInfo(info);
-            } catch {
-                showToast('Error toggle song info');
+                const [trackResponse, playerResponse] = await Promise.all([
+                    fetch(`http://${actualServer.ip}:3553/track/info`),
+                    fetch(`http://${actualServer.ip}:3553/player/state`),
+                ]);
+
+                const [trackInfo, playerInfo] = await Promise.all([trackResponse.json(), playerResponse.json()]);
+
+                setSongInfo(trackInfo);
+                setIsPlaying(playerInfo.state === 2 ? true : false);
+                setSongDuration(playerInfo.duration);
+            } catch (error) {
+                showToast('Error toggle player');
             }
         };
 
-        const playerState = async () => {
-            try {
-                const response = await fetch(`http://${actualServer.ip}:3553/player/state`);
-                const data = await response.json();
-                setIsPlaying(data.state === 2 ? true : false);
-                setSongDuration(data.duration);
-            } catch {
-                showToast('Error toggle player state');
-            }
-        };
-
-        songInfo();
-        playerState();
+        toggleInfo();
     }, [actualServer]);
 
     return (
@@ -122,7 +132,8 @@ export default function TogglePlayer() {
             <View style={[styles.playerToggle]}>
                 <Pressable
                     android_ripple={{ color: Theme.colors.ripple, borderless: false, foreground: true }}
-                    onPress={handlePlayerVisible}>
+                    onPress={handlePlayerVisible}
+                    disabled={!enableButton}>
                     <View style={[styles.toggleInside, { backgroundColor: Theme.colors.lightBlack }]}>
                         <View style={styles.leftContentToggle}>
                             <Svg
@@ -144,7 +155,7 @@ export default function TogglePlayer() {
                             <IconButton
                                 containerStyle={{ position: 'absolute', left: 15, top: 20, width: 40, height: 40 }}
                                 insideStyle={{ backgroundColor: Theme.colors.white }}
-                                onPress={handlePause}
+                                onPress={enableButton ? handlePause : () => {}}
                                 IconSet={MaterialCommunityIcons}
                                 iconName={isPlaying ? 'pause' : 'play'}
                                 iconSize={36}
@@ -152,13 +163,13 @@ export default function TogglePlayer() {
                             />
                             <View style={styles.songInfo}>
                                 <Text
-                                    style={[styles.text, { fontFamily: 'MPLUS-Bold' }]}
+                                    style={[styles.text, { fontFamily: Theme.fontFamily.bold }]}
                                     numberOfLines={1}
                                     ellipsizeMode='tail'>
                                     {songInfo.title}
                                 </Text>
                                 <Text
-                                    style={[styles.text, { color: Theme.colors.lightGray, fontSize: 12 }]}
+                                    style={[styles.text, { color: Theme.colors.lightGray }]}
                                     numberOfLines={1}
                                     ellipsizeMode='tail'>
                                     {songInfo.artist}
@@ -214,6 +225,6 @@ const styles = StyleSheet.create({
     text: {
         color: '#FFF',
         fontFamily: 'MPLUS-Regular',
-        fontSize: 14,
+        fontSize: Theme.fontSize.paragraph,
     },
 });

@@ -11,10 +11,6 @@ export default function HomeLayout() {
                 name='player/index'
                 options={{ animation: 'fade_from_bottom' }}
             />
-            <Stack.Screen
-                name='player/songDetails'
-                options={{ animation: 'fade' }}
-            />
             <Stack.Screen name='playlist/[id]' />
         </Stack>
     );

@@ -1,6 +1,8 @@
 import { useAIMP } from '@/hooks/useAIMP';
 // import { useAppState } from '@/hooks/useAppState';
 import IconButton from '@/components/ui/IconButton';
+import { MAX_HEIGHT } from '@/constants';
+import { Theme } from '@/theme';
 import { Songs } from '@/types/songs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
@@ -8,7 +10,7 @@ import { BlurTargetView, BlurView } from 'expo-blur';
 import { Image, ImageBackground } from 'expo-image';
 import { useIsFocused, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, StyleSheet, Text, ToastAndroid, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '../../../context/appContext';
@@ -39,7 +41,7 @@ export default function PlayerBottomSheet() {
     const transition = useSharedValue(0);
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { actualServer: server, isLoaded } = useSettings();
+    const { actualServer, isLoaded } = useSettings();
     const targetRef = useRef<View | null>(null);
     const { aimpEvent } = useAIMP();
     const isFocused = useIsFocused();
@@ -65,7 +67,7 @@ export default function PlayerBottomSheet() {
 
     const handleRepeatState = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/repeat`, {
+            const response = await fetch(`http://${actualServer.ip}:3553/player/repeat`, {
                 method: 'POST',
             });
             const data = await response.json();
@@ -77,7 +79,7 @@ export default function PlayerBottomSheet() {
 
     const handleShuffleState = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/shuffle`, {
+            const response = await fetch(`http://${actualServer.ip}:3553/player/shuffle`, {
                 method: 'POST',
             });
             const data = await response.json();
@@ -89,7 +91,7 @@ export default function PlayerBottomSheet() {
 
     const handleMuteState = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/mute`, {
+            const response = await fetch(`http://${actualServer.ip}:3553/player/mute`, {
                 method: 'POST',
             });
             const data = await response.json();
@@ -101,7 +103,7 @@ export default function PlayerBottomSheet() {
 
     const handleVolumeState = async (volume: number) => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/volume`, {
+            const response = await fetch(`http://${actualServer.ip}:3553/player/volume`, {
                 method: 'POST',
                 body: JSON.stringify({ volume: volume }),
             });
@@ -116,7 +118,7 @@ export default function PlayerBottomSheet() {
 
     const handleNextTrack = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/next`, {
+            const response = await fetch(`http://${actualServer.ip}:3553/player/next`, {
                 method: 'POST',
             });
             await response.json();
@@ -127,7 +129,7 @@ export default function PlayerBottomSheet() {
 
     const handlePreviousTrack = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/previous`, {
+            const response = await fetch(`http://${actualServer.ip}:3553/player/previous`, {
                 method: 'POST',
             });
             await response.json();
@@ -138,7 +140,7 @@ export default function PlayerBottomSheet() {
 
     const handlePause = async () => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/playpause`, {
+            const response = await fetch(`http://${actualServer.ip}:3553/player/playpause`, {
                 method: 'POST',
             });
             await response.json();
@@ -155,7 +157,7 @@ export default function PlayerBottomSheet() {
 
     const handleSongPosition = async (position: number) => {
         try {
-            const response = await fetch(`http://${server.ip}:3553/player/seek`, {
+            const response = await fetch(`http://${actualServer.ip}:3553/player/seek`, {
                 method: 'POST',
                 body: JSON.stringify({ position: position }),
             });
@@ -218,7 +220,7 @@ export default function PlayerBottomSheet() {
         const songCover = async () => {
             try {
                 const timestamp = new Date().getTime();
-                const url = `http://${server.ip}:3553/track/cover?t=${timestamp}`;
+                const url = `http://${actualServer.ip}:3553/track/cover?t=${timestamp}`;
                 setImageUri(url);
             } catch {
                 showToast('Error get actual song cover');
@@ -228,19 +230,24 @@ export default function PlayerBottomSheet() {
         if (aimpEvent.track.title) {
             songCover();
         }
-    }, [aimpEvent.track.title, aimpEvent.track.artist, server]);
+    }, [aimpEvent.track.title, aimpEvent.track.artist, actualServer]);
 
     useEffect(() => {
         if (!isLoaded) return;
 
         const songInformationAndCover = async () => {
             try {
+                if (actualServer.ip === '127.0.0.1') {
+                    setSongInfo(defaultSong);
+                    return;
+                }
+
                 const timestamp = new Date().getTime();
-                const url = `http://${server.ip}:3553/track/cover?t=${timestamp}`;
+                const url = `http://${actualServer.ip}:3553/track/cover?t=${timestamp}`;
 
                 const [songResponse, playerResponse] = await Promise.all([
-                    fetch(`http://${server.ip}:3553/track/info`),
-                    fetch(`http://${server.ip}:3553/player/state`),
+                    fetch(`http://${actualServer.ip}:3553/track/info`),
+                    fetch(`http://${actualServer.ip}:3553/player/state`),
                 ]);
 
                 const [songInfo, playerInfo] = await Promise.all([songResponse.json(), playerResponse.json()]);
@@ -258,7 +265,7 @@ export default function PlayerBottomSheet() {
         };
 
         songInformationAndCover();
-    }, [server]);
+    }, [actualServer]);
 
     if (!isFocused) {
         return null;
@@ -292,137 +299,199 @@ export default function PlayerBottomSheet() {
                     />
                     <View style={styles.headerInfo}>
                         <Text style={styles.headerTitle}>Playing from</Text>
-                        <Text style={styles.headerSubtitle}>{server.name}</Text>
-                    </View>
-                    <IconButton
-                        onPress={() => router.navigate({ pathname: '/(home)/player/songDetails', params: { song: JSON.stringify(songInfo) } })}
-                        IconSet={MaterialCommunityIcons}
-                        iconName='dots-vertical'
-                    />
-                </View>
-                <View style={styles.content}>
-                    <View style={[styles.songImage, { aspectRatio: 1 }]}>
-                        {imageUri && (
-                            <Image
-                                source={{ uri: imageUri }}
-                                style={styles.image}
-                                transition={400}
-                                contentFit='cover'
-                                cachePolicy={'none'}
-                            />
-                        )}
-                    </View>
-                    <View style={styles.songInfo}>
-                        <Text
-                            style={styles.songTitle}
-                            numberOfLines={1}
-                            ellipsizeMode='tail'>
-                            {songInfo.title}
-                        </Text>
-                        {/* <Text style={styles.songAlbum} numberOfLines={1} ellipsizeMode='tail'>{songInfo.album}</Text> */}
-                        <Text
-                            style={styles.songArtist}
-                            numberOfLines={1}
-                            ellipsizeMode='tail'>
-                            {songInfo.artist}
-                        </Text>
+                        <Text style={styles.headerSubtitle}>{actualServer.name}</Text>
                     </View>
                 </View>
-                <View style={styles.controls}>
-                    <View style={styles.playerExtraControls}>
-                        <Animated.View style={[styles.extraControlsWrapper, animatedSlider, { justifyContent: 'space-evenly', gap: 10 }]}>
-                            <View style={{ flexDirection: 'column' }}>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={{ height: MAX_HEIGHT - 60 - insets.top - insets.bottom, paddingBottom: insets.bottom }}>
+                        <View style={styles.content}>
+                            <View style={[styles.songImage, { aspectRatio: 1 }]}>
+                                {imageUri && (
+                                    <Image
+                                        source={{ uri: imageUri }}
+                                        style={{ width: '100%', height: '100%' }}
+                                        transition={250}
+                                        contentFit='cover'
+                                        cachePolicy={'memory'}
+                                    />
+                                )}
+                            </View>
+                            <View style={styles.songInfo}>
+                                <Text
+                                    style={styles.songTitle}
+                                    numberOfLines={1}
+                                    ellipsizeMode='tail'>
+                                    {songInfo.title}
+                                </Text>
+                                <Text
+                                    style={styles.songArtist}
+                                    numberOfLines={1}
+                                    ellipsizeMode='tail'>
+                                    {songInfo.album}
+                                </Text>
+                                <Text
+                                    style={styles.songArtist}
+                                    numberOfLines={1}
+                                    ellipsizeMode='tail'>
+                                    {songInfo.artist}
+                                </Text>
+                            </View>
+                        </View>
+                        <View style={styles.controls}>
+                            <View style={styles.playerExtraControls}>
+                                <Animated.View style={[styles.extraControlsWrapper, animatedSlider, { justifyContent: 'space-evenly', gap: 10 }]}>
+                                    <View style={{ flexDirection: 'column' }}>
+                                        <IconButton
+                                            onPress={() => handleShowSlider()}
+                                            insideStyle={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                                            InsideElement={
+                                                <>
+                                                    <Ionicons
+                                                        name='volume-medium-outline'
+                                                        size={24}
+                                                        color='white'
+                                                    />
+                                                    <Text style={{ color: '#C6C6C6', fontFamily: 'MPLUS-Regular', fontSize: 10 }}>{volumeState}</Text>
+                                                </>
+                                            }
+                                        />
+                                    </View>
+                                    <Slider
+                                        style={{ flex: 1 }}
+                                        step={1}
+                                        minimumValue={0}
+                                        maximumValue={100}
+                                        minimumTrackTintColor='#FFFFFF'
+                                        maximumTrackTintColor='#C6C6C6'
+                                        thumbTintColor='#FFFFFF'
+                                        value={volumeState}
+                                        onValueChange={(e: any) => handleVolumeState(e)}
+                                    />
+                                </Animated.View>
+                                <Animated.View style={[styles.extraControlsWrapper, animatedButtons]}>
+                                    <IconButton
+                                        onPress={() => handleRepeatState()}
+                                        IconSet={Ionicons}
+                                        iconName='repeat'
+                                        iconColor={repeatState ? 'white' : '#8b8b8b'}
+                                    />
+                                    <IconButton
+                                        onPress={() => handleShuffleState()}
+                                        IconSet={Ionicons}
+                                        iconName='shuffle'
+                                        iconColor={shuffleState ? 'white' : '#8b8b8b'}
+                                    />
+                                    <IconButton
+                                        onPress={() => handleMuteState()}
+                                        IconSet={Ionicons}
+                                        iconName='volume-mute-outline'
+                                        iconColor={muteState ? 'white' : '#8b8b8b'}
+                                    />
+                                    <IconButton
+                                        onPress={() => handleShowSlider()}
+                                        IconSet={Ionicons}
+                                        iconName='volume-medium-outline'
+                                    />
+                                </Animated.View>
+                            </View>
+                            <View style={styles.playerSlider}>
+                                <Text style={styles.playerSliderTime}>{new Date(songPosition).toISOString().slice(14, 19)}</Text>
+                                <Slider
+                                    style={{ flex: 1 }}
+                                    step={1}
+                                    minimumValue={0}
+                                    maximumValue={songDuration}
+                                    minimumTrackTintColor='#FFFFFF'
+                                    maximumTrackTintColor='#C6C6C6'
+                                    thumbTintColor='#FFFFFF'
+                                    value={songPosition}
+                                    onValueChange={(e: any) => handleSongPosition(e)}
+                                />
+                                <Text style={styles.playerSliderTime}>{new Date(songDuration).toISOString().slice(14, 19)}</Text>
+                            </View>
+                            <View style={styles.playerBasicControls}>
                                 <IconButton
-                                    onPress={() => handleShowSlider()}
-                                    insideStyle={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
-                                    InsideElement={
-                                        <>
-                                            <Ionicons
-                                                name='volume-medium-outline'
-                                                size={24}
-                                                color='white'
-                                            />
-                                            <Text style={{ color: '#C6C6C6', fontFamily: 'MPLUS-Regular', fontSize: 10 }}>{volumeState}</Text>
-                                        </>
-                                    }
+                                    onPress={() => handlePreviousTrack()}
+                                    containerStyle={{ width: 80, height: 80 }}
+                                    IconSet={Ionicons}
+                                    iconName='play-skip-back'
+                                    iconSize={36}
+                                />
+                                <IconButton
+                                    onPress={() => handlePause()}
+                                    containerStyle={{ width: 80, height: 80, borderColor: '#FFF', borderWidth: 2 }}
+                                    IconSet={MaterialCommunityIcons}
+                                    iconName={playerState ? 'pause' : 'play'}
+                                    iconSize={48}
+                                />
+                                <IconButton
+                                    onPress={() => handleNextTrack()}
+                                    containerStyle={{ width: 80, height: 80 }}
+                                    IconSet={Ionicons}
+                                    iconName='play-skip-forward'
+                                    iconSize={36}
                                 />
                             </View>
-                            <Slider
-                                style={{ flex: 1 }}
-                                step={1}
-                                minimumValue={0}
-                                maximumValue={100}
-                                minimumTrackTintColor='#FFFFFF'
-                                maximumTrackTintColor='#C6C6C6'
-                                thumbTintColor='#FFFFFF'
-                                value={volumeState}
-                                onValueChange={(e: any) => handleVolumeState(e)}
-                            />
-                        </Animated.View>
-                        <Animated.View style={[styles.extraControlsWrapper, animatedButtons]}>
-                            <IconButton
-                                onPress={() => handleRepeatState()}
-                                IconSet={Ionicons}
-                                iconName='repeat'
-                                iconColor={repeatState ? 'white' : '#8b8b8b'}
-                            />
-                            <IconButton
-                                onPress={() => handleShuffleState()}
-                                IconSet={Ionicons}
-                                iconName='shuffle'
-                                iconColor={shuffleState ? 'white' : '#8b8b8b'}
-                            />
-                            <IconButton
-                                onPress={() => handleMuteState()}
-                                IconSet={Ionicons}
-                                iconName='volume-mute-outline'
-                                iconColor={muteState ? 'white' : '#8b8b8b'}
-                            />
-                            <IconButton
-                                onPress={() => handleShowSlider()}
-                                IconSet={Ionicons}
-                                iconName='volume-medium-outline'
-                            />
-                        </Animated.View>
+                        </View>
                     </View>
-                    <View style={styles.playerSlider}>
-                        <Text style={styles.playerSliderTime}>{new Date(songPosition).toISOString().slice(14, 19)}</Text>
-                        <Slider
-                            style={{ flex: 1 }}
-                            step={1}
-                            minimumValue={0}
-                            maximumValue={songDuration}
-                            minimumTrackTintColor='#FFFFFF'
-                            maximumTrackTintColor='#C6C6C6'
-                            thumbTintColor='#FFFFFF'
-                            value={songPosition}
-                            onValueChange={(e: any) => handleSongPosition(e)}
-                        />
-                        <Text style={styles.playerSliderTime}>{new Date(songDuration).toISOString().slice(14, 19)}</Text>
+                    <View style={styles.songDetailsContainer}>
+                        <View style={styles.extraInfoSong}>
+                            <View style={styles.extraInfoSection}>
+                                <Text style={styles.extraInfoTitle}>Album</Text>
+                                <Text style={styles.extraInfoText}>{songInfo.album}</Text>
+                            </View>
+                            <View style={styles.extraInfoSection}>
+                                <Text style={styles.extraInfoTitle}>Genre</Text>
+                                <Text style={styles.extraInfoText}>{songInfo.genre}</Text>
+                            </View>
+                            <View style={styles.extraInfoSection}>
+                                <Text style={styles.extraInfoTitle}>Artist</Text>
+                                <Text style={styles.extraInfoText}>{songInfo.artist}</Text>
+                            </View>
+                        </View>
+                        <View style={styles.extraInfoPlay}>
+                            <View style={styles.extraInfoPlaySection}>
+                                <Text style={styles.extraInfoTitle}>Play Count</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Text style={[styles.extraInfoText, { fontSize: 24, fontFamily: 'MPLUS-Bold' }]}>{songInfo.play_count}</Text>
+                                </View>
+                            </View>
+                            <View style={styles.extraInfoPlaySection}>
+                                <Text style={styles.extraInfoTitle}>Rating</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                                    <View style={{ flexDirection: 'row' }}>
+                                        {[...Array(songInfo.rating)].map((_, index) => (
+                                            <MaterialCommunityIcons
+                                                name='music-note-quarter'
+                                                size={24}
+                                                color='white'
+                                                key={`rating-music-note-${index}`}
+                                            />
+                                        ))}
+                                        {[...Array(5 - songInfo.rating)].map((_, index) => (
+                                            <MaterialCommunityIcons
+                                                name='music-note-half'
+                                                size={24}
+                                                color='#8B8B8B'
+                                                key={`rating-music-note-${index}`}
+                                            />
+                                        ))}
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                        <View style={[styles.extraInfoPlay]}>
+                            <View style={styles.extraInfoPlaySection}>
+                                <Text style={styles.extraInfoTitle}>Bitrate (kbps)</Text>
+                                <Text style={[styles.extraInfoText, { fontSize: 24, fontFamily: 'MPLUS-Bold' }]}>{songInfo.bitrate}</Text>
+                            </View>
+                            <View style={styles.extraInfoPlaySection}>
+                                <Text style={styles.extraInfoTitle}>Sample Rate (Hz)</Text>
+                                <Text style={[styles.extraInfoText, { fontSize: 24, fontFamily: 'MPLUS-Bold' }]}>{songInfo.sample_rate}</Text>
+                            </View>
+                        </View>
                     </View>
-                    <View style={styles.playerBasicControls}>
-                        <IconButton
-                            rippleColor='rgba(139, 139, 139, 0.5)'
-                            onPress={() => handlePreviousTrack()}
-                            IconSet={Ionicons}
-                            iconName='play-skip-back'
-                        />
-                        <IconButton
-                            rippleColor='rgba(139, 139, 139, 0.5)'
-                            onPress={() => handlePause()}
-                            containerStyle={{ width: 60, height: 60, borderColor: '#FFF', borderWidth: 2 }}
-                            IconSet={MaterialCommunityIcons}
-                            iconName={playerState ? 'pause' : 'play'}
-                            iconSize={36}
-                        />
-                        <IconButton
-                            rippleColor='rgba(139, 139, 139, 0.5)'
-                            onPress={() => handleNextTrack()}
-                            IconSet={Ionicons}
-                            iconName='play-skip-forward'
-                        />
-                    </View>
-                </View>
+                </ScrollView>
             </View>
         </>
     );
@@ -447,26 +516,22 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     headerInfo: {
-        flex: 1,
-        // backgroundColor: '#FFF',
         paddingHorizontal: 20,
 
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: 'flex-end',
         justifyContent: 'center',
     },
     headerTitle: {
         color: '#C6C6C6',
         fontFamily: 'MPLUS-Regular',
         fontSize: 10,
-        textAlign: 'center',
         textTransform: 'uppercase',
     },
     headerSubtitle: {
         color: '#FFF',
         fontFamily: 'MPLUS-Regular',
         fontSize: 12,
-        textAlign: 'center',
     },
     content: {
         height: 'auto',
@@ -480,18 +545,14 @@ const styles = StyleSheet.create({
     },
     songImage: {
         width: '100%',
+        backgroundColor: Theme.colors.lightBlack,
 
         alignItems: 'center',
         justifyContent: 'flex-end',
         overflow: 'hidden',
 
         borderRadius: 20,
-
-        elevation: 5,
-    },
-    image: {
-        width: '100%',
-        height: '100%',
+        boxShadow: '0px 0px 15px 5px rgba(0, 0, 0, 0.2)',
     },
     songInfo: {
         // backgroundColor: '#c6c6c6',
@@ -506,20 +567,13 @@ const styles = StyleSheet.create({
         fontFamily: 'MPLUS-ExtraBold',
         fontSize: 24,
     },
-    songAlbum: {
-        color: '#8B8B8B',
-        fontFamily: 'MPLUS',
-        fontSize: 14,
-    },
     songArtist: {
         color: '#8B8B8B',
         fontFamily: 'MPLUS-Regular',
         fontSize: 14,
     },
     controls: {
-        // backgroundColor: '#FFF',
-        marginTop: 10,
-        paddingVertical: 20,
+        paddingBottom: 20,
 
         flex: 1,
         alignItems: 'center',
@@ -574,5 +628,51 @@ const styles = StyleSheet.create({
         gap: 40,
 
         zIndex: 20,
+    },
+    songDetailsContainer: {
+        padding: 20,
+        paddingBottom: 0,
+
+        gap: 20,
+    },
+    extraInfoSection: {
+        flexDirection: 'column',
+        justifyContent: 'center',
+        gap: 5,
+    },
+    extraInfoSong: {
+        width: '100%',
+        backgroundColor: `${Theme.colors.lightBlack}80`,
+        padding: 20,
+
+        gap: 20,
+
+        borderRadius: 20,
+    },
+    extraInfoPlay: {
+        width: '100%',
+
+        flexDirection: 'row',
+        gap: 20,
+    },
+    extraInfoPlaySection: {
+        backgroundColor: `${Theme.colors.lightBlack}80`,
+        padding: 20,
+
+        flex: 1,
+        flexDirection: 'column-reverse',
+        gap: 5,
+
+        borderRadius: 20,
+    },
+    extraInfoTitle: {
+        color: '#8B8B8B',
+        fontFamily: 'MPLUS-Regular',
+        fontSize: 10,
+    },
+    extraInfoText: {
+        color: '#FFF',
+        fontFamily: 'MPLUS-Regular',
+        fontSize: 14,
     },
 });
