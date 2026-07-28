@@ -3,9 +3,21 @@ import IconButton from '@/components/ui/IconButton';
 import { useSettings } from '@/context/appContext';
 import { Theme } from '@/theme';
 import { checkServer, isValidIPv4 } from '@/utils/validation';
+import {
+    Box,
+    Column,
+    Text as EUIText,
+    FilledTonalButton,
+    Host,
+    ModalBottomSheet,
+    ModalBottomSheetRef,
+    Row,
+    VerticalDivider,
+} from '@expo/ui/jetpack-compose';
+import { background, clip, fillMaxWidth, height, padding, Shapes, width } from '@expo/ui/jetpack-compose/modifiers';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { ComponentProps, useEffect, useState } from 'react';
+import React, { ComponentProps, memo, useEffect, useRef, useState } from 'react';
 import { BackHandler, ScrollView, StyleSheet, Text, TextInput, ToastAndroid, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -32,13 +44,13 @@ interface InputElementProps {
     value: string;
 }
 
-const tempServers = [
-    { ip: '192.168.1.1', name: 'PC1' },
-    { ip: '192.168.1.2', name: 'PC2' },
-    { ip: '192.168.1.3', name: 'PC3' },
-    { ip: '192.168.1.4', name: 'PC4' },
-    { ip: '192.168.1.5', name: 'PC5' },
-];
+interface ServerListElementProps {
+    index: number;
+    item: { ip: string; name: string };
+    actualServer: { ip: string; name: string };
+    leftAction: (value: number) => void;
+    rightAction: (value: number) => void;
+}
 
 function InputElement({ IconSet, iconName, keyboardType, placeholder, inputProps, setValue, value }: InputElementProps) {
     return (
@@ -69,6 +81,95 @@ function InputElement({ IconSet, iconName, keyboardType, placeholder, inputProps
         </View>
     );
 }
+
+const ServerListElement = memo(function ServerListElement({ actualServer, index, item, leftAction, rightAction }: ServerListElementProps) {
+    const [visible, setVisible] = useState(false);
+    const sheetRef = useRef<ModalBottomSheetRef>(null);
+    const isCurrentServer = item.ip === actualServer.ip;
+
+    return (
+        <Host matchContents>
+            <IconButton
+                onPress={() => setVisible(true)}
+                containerStyle={{ width: '100%', height: 'auto', borderRadius: 0 }}
+                InsideElement={
+                    <View style={styles.serverElementContainer}>
+                        {/* <Text style={[styles.text, styles.subtitle]}>{index + 1}</Text> */}
+                        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={styles.serverInformation}>
+                                <Text style={[styles.text, styles.subtitle]}>{item.name}</Text>
+                                <Text style={[styles.text, { color: Theme.colors.gray }]}>{item.ip}</Text>
+                            </View>
+                            {isCurrentServer && (
+                                <View style={[styles.serverStatus, { backgroundColor: `${Theme.colors.accent}33` }]}>
+                                    <Text style={[styles.text, { color: Theme.colors.accent }]}>Connected</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                }
+            />
+            {visible && (
+                <ModalBottomSheet
+                    ref={sheetRef}
+                    onDismissRequest={() => setVisible(false)}>
+                    <ModalBottomSheet.DragHandle>
+                        <Column
+                            horizontalAlignment='center'
+                            modifiers={[fillMaxWidth(), padding(0, 10, 0, 10)]}>
+                            <Box modifiers={[width(60), height(5), clip(Shapes.Circle), background(Theme.colors.gray)]} />
+                        </Column>
+                    </ModalBottomSheet.DragHandle>
+                    <Column
+                        verticalArrangement={{ spacedBy: 10 }}
+                        modifiers={[padding(20, 20, 20, 0), fillMaxWidth()]}>
+                        <EUIText style={{ fontFamily: Theme.fontFamily.bold, fontSize: Theme.fontSize.subtitle }}>Manage server</EUIText>
+                        <EUIText style={{ fontFamily: Theme.fontFamily.regular, fontSize: Theme.fontSize.paragraph }}>
+                            What would you like to do with the next server? You can temporarily disconnect from it or remove it from your saved list.
+                        </EUIText>
+                        <Row
+                            modifiers={[fillMaxWidth(), height(50), padding(0, 10, 0, 0)]}
+                            horizontalArrangement={'spaceEvenly'}>
+                            <EUIText style={{ fontFamily: Theme.fontFamily.regular, fontSize: Theme.fontSize.subtitle }}>{item.name}</EUIText>
+                            <VerticalDivider
+                                color={Theme.colors.darkGray}
+                                thickness={2}
+                                modifiers={[height(24)]}
+                            />
+                            <EUIText style={{ fontFamily: Theme.fontFamily.regular, fontSize: Theme.fontSize.subtitle }}>{item.ip}</EUIText>
+                        </Row>
+                    </Column>
+                    <Column modifiers={[fillMaxWidth(), padding(0, 10, 0, 20)]}>
+                        <Row
+                            horizontalArrangement='spaceEvenly'
+                            modifiers={[fillMaxWidth()]}>
+                            <FilledTonalButton
+                                modifiers={[height(48)]}
+                                onClick={() => leftAction(index)}
+                                colors={{ containerColor: Theme.colors.darkGray }}>
+                                <EUIText
+                                    style={{ fontFamily: Theme.fontFamily.bold, fontSize: Theme.fontSize.subtitle }}
+                                    color={'#F54927'}>
+                                    DELETE
+                                </EUIText>
+                            </FilledTonalButton>
+                            <FilledTonalButton
+                                modifiers={[height(48)]}
+                                onClick={() => rightAction(index)}
+                                colors={{ containerColor: Theme.colors.darkGray }}>
+                                <EUIText
+                                    style={{ fontFamily: Theme.fontFamily.bold, fontSize: Theme.fontSize.subtitle }}
+                                    color={isCurrentServer ? Theme.colors.gray : Theme.colors.accent}>
+                                    {isCurrentServer ? 'DISCONNECT' : 'CONNECT'}
+                                </EUIText>
+                            </FilledTonalButton>
+                        </Row>
+                    </Column>
+                </ModalBottomSheet>
+            )}
+        </Host>
+    );
+});
 
 export default function Preferences() {
     const [serverIp, setServerIp] = useState<string>('');
@@ -120,6 +221,25 @@ export default function Preferences() {
         setServerIp('');
         setServerName('');
         showToast('Server verified and added successfully!');
+    };
+
+    const handleDeleteSavedServer = (ip: string) => {
+        setServerList((prev) => prev.filter((item) => item.ip !== ip));
+        if (ip === actualServer.ip) {
+            setActualServer({ ip: '127.0.0.1', name: 'PC' });
+        }
+    };
+
+    const handleToggleConnection = (index: number) => {
+        const selectedItem = serverList.at(index);
+
+        if (!selectedItem) return;
+
+        if (selectedItem?.ip === actualServer.ip) {
+            setActualServer({ ip: '127.0.0.1', name: 'PC' });
+        } else {
+            setActualServer({ ip: selectedItem.ip, name: selectedItem.name });
+        }
     };
 
     useEffect(() => {
@@ -209,26 +329,13 @@ export default function Preferences() {
                         <Text style={[styles.text, styles.subtitle]}>Added Servers</Text>
                         <View style={{ width: '100%', flexDirection: 'column' }}>
                             {serverList.map((item, index) => (
-                                <IconButton
-                                    onPress={() => {}}
-                                    containerStyle={{ width: '100%', height: 'auto', borderRadius: 0 }}
+                                <ServerListElement
+                                    actualServer={actualServer}
+                                    index={index}
+                                    item={item}
                                     key={`${index}-saved-server`}
-                                    InsideElement={
-                                        <View style={styles.serverElementContainer}>
-                                            <Text style={[styles.text, styles.subtitle]}>{index + 1}</Text>
-                                            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
-                                                <View style={styles.serverInformation}>
-                                                    <Text style={[styles.text, styles.subtitle]}>{item.name}</Text>
-                                                    <Text style={[styles.text, { color: Theme.colors.gray }]}>{item.ip}</Text>
-                                                </View>
-                                                {item.ip === actualServer.ip && (
-                                                    <View style={[styles.serverStatus, { backgroundColor: `#23a55a33` }]}>
-                                                        <Text style={[styles.text, { color: '#23a55a' }]}>Online</Text>
-                                                    </View>
-                                                )}
-                                            </View>
-                                        </View>
-                                    }
+                                    leftAction={() => handleDeleteSavedServer(item.ip)}
+                                    rightAction={() => handleToggleConnection(index)}
                                 />
                             ))}
                         </View>
@@ -306,7 +413,6 @@ const styles = StyleSheet.create({
     serverElementContainer: {
         width: '100%',
         padding: 10,
-        paddingHorizontal: 20,
 
         flexDirection: 'row',
         alignItems: 'center',
