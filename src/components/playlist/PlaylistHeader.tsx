@@ -1,14 +1,21 @@
+import { useSettings } from '@/context/appContext';
 import { Theme } from '@/theme';
 import { PlaylistDetailsHeader } from '@/types/playlists';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BlurTargetView, BlurView } from 'expo-blur';
+import { Image, ImageBackground } from 'expo-image';
+import React, { useRef } from 'react';
+import { ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 interface PlaylistHeaderProps extends PlaylistDetailsHeader {
     setHeaderHeight?: (value: number) => void;
+    headerStyle?: ViewStyle;
 }
 
-export default function Header({ playlistInfo, playlistStats, setHeaderHeight = () => {} }: PlaylistHeaderProps) {
+export default function PlaylistHeader({ playlistInfo, playlistStats, setHeaderHeight = () => {}, headerStyle }: PlaylistHeaderProps) {
+    const { actualServer } = useSettings();
+    const targetRef = useRef<View | null>(null);
+
     function formatTime(totalSeconds: number): string {
         if (totalSeconds <= 0) return '0 segundos';
 
@@ -52,13 +59,39 @@ export default function Header({ playlistInfo, playlistStats, setHeaderHeight = 
 
     return (
         <View
-            style={styles.playlistInfo}
+            style={[styles.playlistInfo, headerStyle]}
             onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+            <BlurTargetView
+                ref={targetRef}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: 600 }}>
+                <ImageBackground
+                    style={{ flex: 1 }}
+                    source={{ uri: `http://${actualServer.ip}:3553/playlist/cover?id=${playlistInfo.id}` }}
+                    transition={250}
+                    cachePolicy={'memory'}
+                />
+            </BlurTargetView>
+            <BlurView
+                intensity={400}
+                tint='systemMaterialDark'
+                blurTarget={targetRef}
+                blurMethod='dimezisBlurViewSdk31Plus'
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: 600 }}
+            />
+            <View style={styles.imageContainer}>
+                <Image
+                    source={{ uri: `http://${actualServer.ip}:3553/playlist/cover?id=${playlistInfo.id}` }}
+                    style={{ width: '100%', height: '100%' }}
+                    contentFit='contain'
+                    transition={250}
+                    cachePolicy={'memory'}
+                />
+            </View>
             <View
                 style={[
                     styles.gradientBox,
                     {
-                        experimental_backgroundImage: `linear-gradient(180deg, ${Theme.colors.accent} 25%, transparent)`,
+                        experimental_backgroundImage: `linear-gradient(0deg, ${Theme.colors.background} 15%, transparent)`,
                     },
                 ]}
             />
@@ -151,17 +184,26 @@ const styles = StyleSheet.create({
         position: 'relative',
 
         width: '100%',
-        // backgroundColor: '#FFF',
-        marginBottom: 40,
+        height: 600,
         padding: 20,
 
-        alignItems: 'flex-start',
+        alignItems: 'center',
         justifyContent: 'flex-end',
         gap: 20,
     },
+    imageContainer: {
+        width: 300,
+        height: 300,
+
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+
+        borderRadius: 20,
+        boxShadow: '0px 0px 15px 5px rgba(0, 0, 0, 0.2)',
+    },
     gradientBox: {
         position: 'absolute',
-        top: 0,
         left: 0,
         right: 0,
         bottom: 0,
@@ -169,7 +211,6 @@ const styles = StyleSheet.create({
         height: 250,
     },
     info: {
-        height: 40,
         // backgroundColor: '#FFF',
 
         flexDirection: 'row',
@@ -178,7 +219,7 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     infoPill: {
-        backgroundColor: Theme.colors.darkGray,
+        backgroundColor: Theme.colors.lightBlack,
         paddingHorizontal: 10,
         paddingVertical: 5,
 
@@ -189,7 +230,7 @@ const styles = StyleSheet.create({
 
         borderRadius: 20,
 
-        elevation: 2,
+        boxShadow: '0px 0px 10px 0px rgba(0, 0, 0, 0.1)',
     },
     infoText: {
         color: '#C6C6C6',
@@ -198,6 +239,7 @@ const styles = StyleSheet.create({
     },
     stats: {
         width: '100%',
+        // backgroundColor: '#fff',
 
         flexDirection: 'row',
         alignItems: 'center',
