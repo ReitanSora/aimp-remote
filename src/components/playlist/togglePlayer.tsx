@@ -128,58 +128,56 @@ export default function TogglePlayer() {
     }, [actualServer]);
 
     return (
-        <>
-            <View style={[styles.playerToggle]}>
-                <Pressable
-                    android_ripple={{ color: Theme.colors.ripple, borderless: false, foreground: true }}
-                    onPress={handlePlayerVisible}
-                    disabled={!enableButton}>
-                    <View style={[styles.toggleInside, { backgroundColor: Theme.colors.lightBlack }]}>
-                        <View style={styles.leftContentToggle}>
-                            <Svg
-                                height='80'
-                                width='65'>
-                                <AnimatedCircle
-                                    cx={40}
-                                    cy={35}
-                                    r={25}
-                                    stroke={Theme.colors.accent}
-                                    strokeWidth={5}
-                                    fill={'transparent'}
-                                    strokeDasharray={156}
-                                    animatedProps={animatedProps}
-                                    strokeLinecap={'round'}
-                                    transform={'rotate(-90, 40, 40)'}
-                                />
-                            </Svg>
-                            <IconButton
-                                containerStyle={{ position: 'absolute', left: 15, top: 20, width: 40, height: 40 }}
-                                insideStyle={{ backgroundColor: Theme.colors.white }}
-                                onPress={enableButton ? handlePause : () => {}}
-                                IconSet={MaterialCommunityIcons}
-                                iconName={isPlaying ? 'pause' : 'play'}
-                                iconSize={36}
-                                iconColor={Theme.colors.lightBlack}
+        <View style={[styles.playerToggle]}>
+            <Pressable
+                android_ripple={{ color: Theme.colors.ripple, borderless: false, foreground: true }}
+                onPress={handlePlayerVisible}
+                disabled={!enableButton}>
+                <View style={[styles.toggleInside, { backgroundColor: Theme.colors.lightBlack }]}>
+                    <View style={styles.leftContentToggle}>
+                        <Svg
+                            height='80'
+                            width='65'>
+                            <AnimatedCircle
+                                cx={40}
+                                cy={35}
+                                r={25}
+                                stroke={Theme.colors.accent}
+                                strokeWidth={5}
+                                fill={'transparent'}
+                                strokeDasharray={156}
+                                animatedProps={animatedProps}
+                                strokeLinecap={'round'}
+                                transform={'rotate(-90, 40, 40)'}
                             />
-                            <View style={styles.songInfo}>
-                                <Text
-                                    style={[styles.text, { fontFamily: Theme.fontFamily.bold }]}
-                                    numberOfLines={1}
-                                    ellipsizeMode='tail'>
-                                    {songInfo.title}
-                                </Text>
-                                <Text
-                                    style={[styles.text, { color: Theme.colors.lightGray }]}
-                                    numberOfLines={1}
-                                    ellipsizeMode='tail'>
-                                    {songInfo.artist}
-                                </Text>
-                            </View>
+                        </Svg>
+                        <IconButton
+                            containerStyle={{ position: 'absolute', left: 15, top: 20, width: 40, height: 40 }}
+                            insideStyle={{ backgroundColor: Theme.colors.white }}
+                            onPress={enableButton ? handlePause : () => {}}
+                            IconSet={MaterialCommunityIcons}
+                            iconName={isPlaying ? 'pause' : 'play'}
+                            iconSize={36}
+                            iconColor={Theme.colors.lightBlack}
+                        />
+                        <View style={styles.songInfo}>
+                            <Text
+                                style={[styles.text, { fontFamily: Theme.fontFamily.bold }]}
+                                numberOfLines={1}
+                                ellipsizeMode='tail'>
+                                {songInfo.title}
+                            </Text>
+                            <Text
+                                style={[styles.text, { color: Theme.colors.lightGray }]}
+                                numberOfLines={1}
+                                ellipsizeMode='tail'>
+                                {songInfo.artist}
+                            </Text>
                         </View>
                     </View>
-                </Pressable>
-            </View>
-        </>
+                </View>
+            </Pressable>
+        </View>
     );
 }
 
