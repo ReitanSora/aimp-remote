@@ -8,8 +8,8 @@ export const Theme = {
         black: '#000000',
         ripple: 'rgba(139, 139, 139, 0.25)',
         accent: '#FF9B19',
+        background: '#121212',
     },
-    borders: {},
     fontSize: {
         title: 24,
         subtitle: 16,

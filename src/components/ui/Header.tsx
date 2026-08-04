@@ -226,8 +226,7 @@ const styles = StyleSheet.create({
     },
     searchbarWrapper: {
         flex: 1,
-        height: 48,
-        backgroundColor: Theme.colors.darkGray,
+        backgroundColor: Theme.colors.lightBlack,
         paddingHorizontal: 20,
 
         flexDirection: 'row',
