@@ -28,7 +28,7 @@ export default function Scan() {
     if (!permission.granted) {
         return (
             <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', padding: 20, gap: 20 }]}>
-                <Text style={[styles.subtitle, { fontFamily: Theme.fontFamily.medium }]}>
+                <Text style={[styles.subtitle, { fontFamily: Theme.fontFamily.regular }]}>
                     App needs camera access to scan QR codes, press the button to grant permission
                 </Text>
                 <IconButton

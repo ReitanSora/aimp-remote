@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
         fontSize: Theme.fontSize.subtitle,
     },
     tinyText: {
-        fontFamily: Theme.fontFamily.thin,
+        fontFamily: Theme.fontFamily.regular,
         fontSize: Theme.fontSize.tiny,
     },
     inputsWrapper: {

@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
 
-        fontFamily: Theme.fontFamily.medium,
+        fontFamily: Theme.fontFamily.regular,
         color: Theme.colors.white,
 
         textAlignVertical: 'center',

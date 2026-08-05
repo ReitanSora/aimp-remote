@@ -23,7 +23,7 @@ export const SongItem = memo(
                                 <Text style={styles.playlistText}>{Number(item.index) + 1}</Text>
                                 <View style={{ flex: 1 }}>
                                     <Text
-                                        style={[styles.playlistText, { fontFamily: Theme.fontFamily.medium }]}
+                                        style={[styles.playlistText, { fontFamily: Theme.fontFamily.regular }]}
                                         numberOfLines={1}
                                         ellipsizeMode='tail'>
                                         {item.title}

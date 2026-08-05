@@ -118,7 +118,7 @@ function PlaylistHeader({ playlistInfo, playlistStats, setHeaderHeight = () => {
                     },
                 ]}
             />
-            <Text style={[styles.infoText, { color: '#FFF', fontSize: Theme.fontSize.title, fontFamily: Theme.fontFamily.condensed }]}>
+            <Text style={[styles.infoText, { color: '#FFF', fontSize: Theme.fontSize.title, fontFamily: Theme.fontFamily.bold }]}>
                 {playlistInfo?.name}
             </Text>
             <ScrollView

@@ -17,10 +17,7 @@ export const Theme = {
         tiny: 10,
     },
     fontFamily: {
-        condensed: 'MPLUS-ExtraBold',
         bold: 'MPLUS-Bold',
-        medium: 'MPLUS-Medium',
         regular: 'MPLUS-Regular',
-        thin: 'MPLUS-Thin',
     },
 };

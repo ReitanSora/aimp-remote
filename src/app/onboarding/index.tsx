@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
         color: 'transparent',
     },
     title: {
-        fontFamily: Theme.fontFamily.condensed,
+        fontFamily: Theme.fontFamily.bold,
         fontSize: 36,
         textAlign: 'center',
     },

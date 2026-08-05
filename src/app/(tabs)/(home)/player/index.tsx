@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
     },
     songTitle: {
         color: '#FFF',
-        fontFamily: 'MPLUS-ExtraBold',
+        fontFamily: 'MPLUS-Bold',
         fontSize: 24,
     },
     songArtist: {
