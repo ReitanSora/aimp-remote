@@ -3,7 +3,16 @@ import { useEffect, useState } from 'react';
 import { ToastAndroid } from 'react-native';
 
 export const useAIMP = () => {
-    const [aimpEvent, setAimpEvent] = useState({
+    const [aimpEvent, setAimpEvent] = useState<{
+        muteState: boolean | null;
+        playerState: number | null;
+        position: number;
+        repeatState: boolean | null;
+        shuffleState: boolean | null;
+        status: string;
+        track: any;
+        volumeState: number | null;
+    }>({
         muteState: null,
         playerState: null,
         position: 0,
@@ -23,9 +32,8 @@ export const useAIMP = () => {
             sample_rate: 0,
             title: '',
         },
-        volumeState: 0,
+        volumeState: null,
     });
-    // const ws = useRef(null);
 
     const { actualServer: server } = useSettings();
 
