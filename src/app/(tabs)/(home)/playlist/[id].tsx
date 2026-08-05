@@ -6,8 +6,8 @@ import { Theme } from '@/theme';
 import { PlaylistInfo, PlaylistItem, PlaylistStats } from '@/types/playlists';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DEFAULT_PLAYLIST = {
@@ -40,14 +40,14 @@ export default function Playlist() {
     const [playlistStats, setPlaylistStats] = useState<PlaylistStats>(DEFAULT_PLAYLIST.stats);
     const [playlistItems, setPlaylistItems] = useState<Array<PlaylistItem>>();
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [headerHeight, setHeaderHeight] = useState<number>(0);
 
     const insets = useSafeAreaInsets();
     const { id } = useLocalSearchParams();
     const { actualServer } = useSettings();
     const router = useRouter();
     const flatListRef = useRef<FlatList<PlaylistItem>>(null);
-    const isHeaderVisibleRef = useRef(true);
+
+    const headerHeight = useSharedValue<number>(300);
 
     const isHeaderHidden = useSharedValue(0);
 
@@ -59,17 +59,24 @@ export default function Playlist() {
         opacity: withTiming(isHeaderHidden.value),
     }));
 
-    const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const offsetY = event.nativeEvent.contentOffset.y;
+    const scrollHandler = useAnimatedScrollHandler({
+        onScroll: (event) => {
+            const offsetY = event.contentOffset.y;
+            const targetHeight = headerHeight.value;
 
-        if (offsetY >= headerHeight && isHeaderVisibleRef.current) {
-            isHeaderVisibleRef.current = false;
-            isHeaderHidden.set(1);
-        } else if (offsetY < headerHeight && !isHeaderVisibleRef.current) {
-            isHeaderVisibleRef.current = true;
-            isHeaderHidden.set(0);
+            if (offsetY >= targetHeight && isHeaderHidden.value !== 1) {
+                isHeaderHidden.value = withTiming(1, { duration: 200 });
+            } else if (offsetY < targetHeight && isHeaderHidden.value !== 0) {
+                isHeaderHidden.value = withTiming(0, { duration: 200 });
+            }
+        },
+    });
+
+    const setHeaderHeight = useCallback((height: number) => {
+        if (height > 0) {
+            headerHeight.value = height;
         }
-    };
+    }, []);
 
     const filteredData = useMemo(() => {
         if (!playlistItems) return [];
@@ -83,8 +90,7 @@ export default function Playlist() {
     const handlePlayItem = useCallback(
         async (index: string) => {
             try {
-                const response = await fetch(`http://${actualServer.ip}:3553/playlist/play?id=${id}&index=${index}`);
-                await response.json();
+                await fetch(`http://${actualServer.ip}:3553/playlist/play?id=${id}&index=${index}`);
             } catch (error) {
                 console.log('Error play item', error);
             }
@@ -100,18 +106,6 @@ export default function Playlist() {
             />
         ),
         [handlePlayItem],
-    );
-
-    const listHeader = useMemo(
-        () => (
-            <PlaylistHeader
-                playlistInfo={playlistInfo}
-                playlistStats={playlistStats}
-                setHeaderHeight={setHeaderHeight}
-                headerStyle={{ paddingTop: insets.top + 60 }}
-            />
-        ),
-        [playlistInfo, playlistStats],
     );
 
     useEffect(() => {
@@ -148,7 +142,7 @@ export default function Playlist() {
 
     useEffect(() => {
         if (searchValue.trim().length > 0 && flatListRef.current) {
-            flatListRef.current.scrollToOffset({ offset: 500 + insets.top, animated: true });
+            flatListRef.current.scrollToOffset({ offset: headerHeight.value - 80, animated: true });
         }
     }, [searchValue]);
 
@@ -164,61 +158,66 @@ export default function Playlist() {
     }
 
     return (
-        <>
-            <KeyboardAvoidingView
-                behavior='height'
-                style={[styles.container]}>
-                <SearchHeader
-                    searchBarVisible={searchbarVisible}
-                    searchValue={searchValue}
-                    setSearchBarVisible={setSearchbarVisible}
-                    setSearchValue={setSearchValue}
-                    hasLeftAction={true}
-                    onLeftActionPress={() => router.back()}
-                    headerStyle={{ backgroundColor: 'transparent', position: 'absolute', top: insets.top, height: 60, zIndex: 2 }}
-                    title={playlistInfo.name}
-                    titleStyle={textStyle}
-                />
-                <Animated.View
-                    style={[
-                        blurContainerStyle,
-                        {
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: Theme.colors.background,
-                            height: 60 + insets.top,
+        <KeyboardAvoidingView
+            behavior='height'
+            style={[styles.container]}>
+            <SearchHeader
+                searchBarVisible={searchbarVisible}
+                searchValue={searchValue}
+                setSearchBarVisible={setSearchbarVisible}
+                setSearchValue={setSearchValue}
+                hasLeftAction={true}
+                onLeftActionPress={() => router.back()}
+                headerStyle={{ backgroundColor: 'transparent', position: 'absolute', top: insets.top, height: 60, zIndex: 2 }}
+                title={playlistInfo.name}
+                titleStyle={textStyle}
+            />
+            <Animated.View
+                style={[
+                    blurContainerStyle,
+                    {
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: Theme.colors.background,
+                        height: 60 + insets.top,
 
-                            borderBottomWidth: 1,
-                            borderBottomColor: Theme.colors.darkGray,
+                        borderBottomWidth: 1,
+                        borderBottomColor: Theme.colors.darkGray,
 
-                            elevation: 4,
-                            zIndex: 1,
-                        },
-                    ]}
-                    pointerEvents={'none'}
-                />
-                <FlatList
-                    ref={flatListRef}
-                    data={filteredData}
-                    keyExtractor={(item) => item.index.toString()}
-                    style={{ width: '100%' }}
-                    contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
-                    initialNumToRender={10}
-                    maxToRenderPerBatch={10}
-                    windowSize={5}
-                    showsVerticalScrollIndicator={false}
-                    onScroll={handleScroll}
-                    overScrollMode='never'
-                    removeClippedSubviews={true}
-                    onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
-                    ListHeaderComponent={listHeader}
-                    renderItem={renderItem}
-                />
-            </KeyboardAvoidingView>
-        </>
+                        elevation: 4,
+                        zIndex: 1,
+                    },
+                ]}
+                pointerEvents={'none'}
+            />
+            <Animated.FlatList
+                ref={flatListRef}
+                data={filteredData}
+                keyExtractor={(item) => `playlist-item-${item.index}`}
+                style={{ width: '100%' }}
+                contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}
+                initialNumToRender={15}
+                maxToRenderPerBatch={15}
+                windowSize={7}
+                removeClippedSubviews={true}
+                showsVerticalScrollIndicator={false}
+                overScrollMode='never'
+                onScroll={scrollHandler}
+                scrollEventThrottle={16}
+                ListHeaderComponent={
+                    <PlaylistHeader
+                        playlistInfo={playlistInfo}
+                        playlistStats={playlistStats}
+                        setHeaderHeight={setHeaderHeight}
+                        headerStyle={{ paddingTop: insets.top + 60 }}
+                    />
+                }
+                renderItem={renderItem}
+            />
+        </KeyboardAvoidingView>
     );
 }
 
