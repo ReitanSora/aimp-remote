@@ -2,6 +2,7 @@ import { useAIMP } from '@/hooks/useAIMP';
 // import { useAppState } from '@/hooks/useAppState';
 import IconButton from '@/components/ui/IconButton';
 import { MAX_HEIGHT } from '@/constants';
+import { useSettings } from '@/context/appContext';
 import { Theme } from '@/theme';
 import { Songs } from '@/types/songs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -9,12 +10,10 @@ import Slider from '@react-native-community/slider';
 import { BlurTargetView, BlurView } from 'expo-blur';
 import { Image, ImageBackground } from 'expo-image';
 import { useIsFocused, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, ToastAndroid, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSettings } from '@/context/appContext';
-import { ActivityIndicator } from 'react-native';
 
 const defaultSong: Songs = {
     album: 'Unknown',
@@ -27,26 +26,73 @@ const defaultSong: Songs = {
     title: 'Unknown',
 };
 
-export default function PlayerBottomSheet() {
+interface PlayerState {
+    isPlaying: boolean;
+    duration: number;
+    position: number;
+    repeat: boolean;
+    shuffle: boolean;
+    mute: boolean;
+    volume: number;
+}
+
+const formatTime = (ms: number): string => {
+    if (!ms || isNaN(ms)) return '00:00';
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
+const RatingStars = React.memo(({ rating }: { rating: number }) => {
+    const validRating = Math.max(0, Math.min(5, rating || 0));
+    return (
+        <View style={{ flexDirection: 'row' }}>
+            {Array.from({ length: 5 }).map((_, index) => (
+                <MaterialCommunityIcons
+                    key={`star-${index}`}
+                    name={index < validRating ? 'music-note-quarter' : 'music-note-half'}
+                    size={24}
+                    color={index < validRating ? 'white' : '#8B8B8B'}
+                />
+            ))}
+        </View>
+    );
+});
+
+export default function Player() {
+    const isFocused = useIsFocused();
+    if (!isFocused) {
+        return null;
+    }
+
+    return <PlayerContent />;
+}
+
+function PlayerContent() {
     const [imageUri, setImageUri] = useState<string>();
-    const [songInfo, setSongInfo] = useState<Songs>(defaultSong);
-    const [songDuration, setSongDuration] = useState<number>(0);
-    const [repeatState, setRepeatState] = useState<boolean>(false);
-    const [shuffleState, setShuffleState] = useState<boolean>(false);
-    const [muteState, setMuteState] = useState<boolean>(false);
-    const [volumeState, setVolumeState] = useState<number>(0);
-    const [playerState, setPlayerState] = useState<boolean>(false);
     const [showSlider, setShowSlider] = useState<boolean>(false);
-    const [songPosition, setSongPosition] = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(true);
+
+    const [songInfo, setSongInfo] = useState<Songs>(defaultSong);
+    const [player, setPlayer] = useState<PlayerState>({
+        isPlaying: false,
+        duration: 0,
+        position: 0,
+        repeat: false,
+        shuffle: false,
+        mute: false,
+        volume: 0,
+    });
 
     const transition = useSharedValue(0);
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { actualServer, isLoaded } = useSettings();
     const targetRef = useRef<View | null>(null);
+    const targetTrackRef = useRef<string>('');
     const { aimpEvent } = useAIMP();
-    const isFocused = useIsFocused();
+    const baseUrl = useMemo(() => `http://${actualServer.ip}:3553`, [actualServer.ip]);
 
     const showToast = (message: string) => {
         ToastAndroid.show(message, ToastAndroid.SHORT);
@@ -67,223 +113,204 @@ export default function PlayerBottomSheet() {
         };
     });
 
-    const handleRepeatState = async () => {
-        try {
-            const response = await fetch(`http://${actualServer.ip}:3553/player/repeat`, {
-                method: 'POST',
-            });
-            const data = await response.json();
-            if (data) setRepeatState(!repeatState);
-        } catch {
-            showToast('Error set repeat state');
-        }
-    };
+    const sendPlayerCommand = useCallback(
+        async (endpoint: string, body?: object) => {
+            try {
+                const response = await fetch(`${baseUrl}/player/${endpoint}`, {
+                    method: 'POST',
+                    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+                    body: body ? JSON.stringify(body) : undefined,
+                });
+                return response.ok ? await response.json().catch(() => true) : null;
+            } catch {
+                showToast(`Error command: ${endpoint}`);
+                return null;
+            }
+        },
+        [baseUrl],
+    );
 
-    const handleShuffleState = async () => {
-        try {
-            const response = await fetch(`http://${actualServer.ip}:3553/player/shuffle`, {
-                method: 'POST',
-            });
-            const data = await response.json();
-            if (data) setShuffleState(!shuffleState);
-        } catch {
-            showToast('Error set shuffle state');
+    const handleRepeatState = useCallback(async () => {
+        const response = await sendPlayerCommand('repeat');
+        if (response) {
+            setPlayer((prev) => ({ ...prev, repeat: !player.repeat }));
         }
-    };
+    }, [sendPlayerCommand, player.repeat]);
 
-    const handleMuteState = async () => {
-        try {
-            const response = await fetch(`http://${actualServer.ip}:3553/player/mute`, {
-                method: 'POST',
-            });
-            const data = await response.json();
-            if (data) setMuteState(!muteState);
-        } catch {
-            showToast('Error set mute state');
+    const handleShuffleState = useCallback(async () => {
+        const response = await sendPlayerCommand('shuffle');
+        if (response) {
+            setPlayer((prev) => ({ ...prev, shuffle: !player.shuffle }));
         }
-    };
+    }, [sendPlayerCommand, player.shuffle]);
 
-    const handleVolumeState = async (volume: number) => {
-        try {
-            const response = await fetch(`http://${actualServer.ip}:3553/player/volume`, {
-                method: 'POST',
-                body: JSON.stringify({ volume: volume }),
-            });
-            const data = await response.json();
-            if (data) setVolumeState(volume);
-            if (volume === 0 && !muteState) handleMuteState();
-            else if (volume > 0 && muteState) handleMuteState();
-        } catch {
-            showToast('Error set volume');
+    const handleMuteState = useCallback(async () => {
+        const response = await sendPlayerCommand('mute');
+        if (response) {
+            setPlayer((prev) => ({ ...prev, mute: !player.mute }));
         }
-    };
+    }, [sendPlayerCommand, player.mute]);
 
-    const handleNextTrack = async () => {
-        try {
-            const response = await fetch(`http://${actualServer.ip}:3553/player/next`, {
-                method: 'POST',
-            });
-            await response.json();
-        } catch {
-            showToast('Error next track');
+    const handleVolumeState = useCallback(
+        async (volume: number) => {
+            const response = await sendPlayerCommand('volume', { volume });
+            if (response !== null) {
+                setPlayer((prev) => {
+                    const shouldMute = (volume === 0 && !prev.mute) || (volume > 0 && prev.mute);
+                    if (shouldMute) handleMuteState();
+                    return { ...prev, volume };
+                });
+            }
+        },
+        [sendPlayerCommand, handleMuteState],
+    );
+
+    const handlePause = useCallback(async () => {
+        const response = await sendPlayerCommand('playpause');
+        if (response) {
+            setPlayer((prev) => ({ ...prev, isPlaying: !player.isPlaying }));
         }
-    };
+    }, [sendPlayerCommand, player.isPlaying]);
 
-    const handlePreviousTrack = async () => {
-        try {
-            const response = await fetch(`http://${actualServer.ip}:3553/player/previous`, {
-                method: 'POST',
-            });
-            await response.json();
-        } catch {
-            showToast('Error previous track');
-        }
-    };
+    const handleSongPosition = useCallback(
+        async (position: number) => {
+            const response = await sendPlayerCommand('seek', { position });
+            if (response !== null) {
+                setPlayer((prev) => ({ ...prev, position: position }));
+            }
+        },
+        [sendPlayerCommand],
+    );
 
-    const handlePause = async () => {
-        try {
-            const response = await fetch(`http://${actualServer.ip}:3553/player/playpause`, {
-                method: 'POST',
-            });
-            await response.json();
-            setPlayerState(!playerState);
-        } catch {
-            showToast('Error set play/pause state');
-        }
-    };
-
-    const handleShowSlider = () => {
+    const handleShowSlider = useCallback(() => {
         setShowSlider(!showSlider);
         transition.value = withTiming(showSlider ? 0 : 1, { duration: 250 });
-    };
-
-    const handleSongPosition = async (position: number) => {
-        try {
-            const response = await fetch(`http://${actualServer.ip}:3553/player/seek`, {
-                method: 'POST',
-                body: JSON.stringify({ position: position }),
-            });
-            const data = await response.json();
-            if (data) setSongPosition(position);
-        } catch {
-            showToast('Error set song position');
-        }
-    };
+    }, [transition, showSlider]);
 
     useEffect(() => {
-        if (aimpEvent.playerState === null) return;
-        if (aimpEvent.playerState === 2) setPlayerState(true);
-        if (aimpEvent.playerState !== 2) setPlayerState(false);
-    }, [aimpEvent.playerState]);
+        if (!aimpEvent) return;
 
-    useEffect(() => {
-        if (aimpEvent.repeatState === null) return;
-        if (aimpEvent.repeatState !== repeatState) setRepeatState(aimpEvent.repeatState);
-    }, [aimpEvent.repeatState, repeatState]);
+        setPlayer((prev) => {
+            const hasValidVolume = typeof aimpEvent.volumeState === 'number' && !isNaN(aimpEvent.volumeState);
 
-    useEffect(() => {
-        if (aimpEvent.shuffleState === null) return;
-        if (aimpEvent.shuffleState !== shuffleState) setShuffleState(aimpEvent.shuffleState);
-    }, [aimpEvent.shuffleState]);
-
-    useEffect(() => {
-        if (aimpEvent.muteState === null) return;
-        if (aimpEvent.muteState !== muteState) setMuteState(aimpEvent.muteState);
-    }, [aimpEvent.muteState, muteState]);
-
-    useEffect(() => {
-        if (aimpEvent.position !== 0) setSongPosition(Number(aimpEvent.position));
-    }, [aimpEvent.position]);
-
-    useEffect(() => {
-        if (aimpEvent.track.album !== '') {
-            setSongInfo({
-                album: aimpEvent.track.album,
-                artist: aimpEvent.track.artist,
-                bitrate: aimpEvent.track.bitrate,
-                genre: aimpEvent.track.genre,
-                play_count: aimpEvent.track.play_count,
-                rating: aimpEvent.track.rating,
-                sample_rate: aimpEvent.track.sample_rate,
-                title: aimpEvent.track.title,
-            });
-        }
-    }, [aimpEvent.track]);
-
-    useEffect(() => {
-        if (Math.trunc(aimpEvent.track.duration * 1000) !== songDuration && aimpEvent.track.duration !== 0) {
-            setSongDuration(Math.trunc(aimpEvent.track.duration * 1000));
-        }
-    }, [aimpEvent.track.duration, songDuration]);
-
-    useEffect(() => {
-        if (!isLoaded) return;
-
-        const songCover = async () => {
-            try {
-                const timestamp = new Date().getTime();
-                const url = `http://${actualServer.ip}:3553/track/cover?t=${timestamp}`;
-                setImageUri(url);
-            } catch {
-                showToast('Error get actual song cover');
+            const nextIsPlaying = aimpEvent.playerState !== null ? aimpEvent.playerState === 2 : prev.isPlaying;
+            const nextRepeat = aimpEvent.repeatState !== null ? aimpEvent.repeatState : prev.repeat;
+            const nextShuffle = aimpEvent.shuffleState !== null ? aimpEvent.shuffleState : prev.shuffle;
+            const nextMute = aimpEvent.muteState !== null ? aimpEvent.muteState : prev.mute;
+            const nextPosition = aimpEvent.position !== 0 ? Number(aimpEvent.position) : prev.position;
+            const nextDuration = aimpEvent.track?.duration ? Math.trunc(aimpEvent.track.duration * 1000) : prev.duration;
+            const nextVolume = hasValidVolume ? Number(aimpEvent.volumeState) : prev.volume;
+            if (
+                prev.isPlaying === nextIsPlaying &&
+                prev.repeat === nextRepeat &&
+                prev.shuffle === nextShuffle &&
+                prev.mute === nextMute &&
+                prev.position === nextPosition &&
+                prev.duration === nextDuration &&
+                prev.volume === nextVolume
+            ) {
+                return prev;
             }
-        };
 
-        if (aimpEvent.track.title) {
-            songCover();
+            return {
+                isPlaying: nextIsPlaying,
+                repeat: nextRepeat,
+                shuffle: nextShuffle,
+                mute: nextMute,
+                position: nextPosition,
+                duration: nextDuration,
+                volume: nextVolume,
+            };
+        });
+
+        const track = aimpEvent.track;
+        if (track?.title || track?.album) {
+            setSongInfo((prev) => {
+                if (
+                    prev.title === track.title &&
+                    prev.artist === track.artist &&
+                    prev.album === track.album &&
+                    prev.rating === track.rating &&
+                    prev.play_count === track.play_count
+                ) {
+                    return prev;
+                }
+                return {
+                    album: track.album,
+                    artist: track.artist,
+                    bitrate: track.bitrate,
+                    genre: track.genre,
+                    play_count: track.play_count,
+                    rating: track.rating,
+                    sample_rate: track.sample_rate,
+                    title: track.title,
+                };
+            });
+
+            const newTrackId = `${track.artist}-${track.album}-${track.title}`;
+            setImageUri((prevUri) => {
+                const currentTrackIdRef = targetTrackRef.current;
+                if (currentTrackIdRef !== newTrackId) {
+                    targetTrackRef.current = newTrackId;
+                    return `${baseUrl}/track/cover?t=${Date.now()}`;
+                }
+                return prevUri;
+            });
         }
-    }, [aimpEvent.track.title, aimpEvent.track.artist, actualServer]);
+    }, [aimpEvent, baseUrl]);
 
     useEffect(() => {
         let isMounted = true;
-        setLoading(true);
         if (!isLoaded) return;
+
+        if (actualServer.ip === '127.0.0.1') {
+            setSongInfo(defaultSong);
+            setLoading(false);
+            return;
+        }
 
         const songInformationAndCover = async () => {
             try {
-                if (actualServer.ip === '127.0.0.1') {
-                    setSongInfo(defaultSong);
-                    return;
-                }
-
-                const timestamp = new Date().getTime();
-                const url = `http://${actualServer.ip}:3553/track/cover?t=${timestamp}`;
-
                 const [songResponse, playerResponse] = await Promise.all([
                     fetch(`http://${actualServer.ip}:3553/track/info`),
                     fetch(`http://${actualServer.ip}:3553/player/state`),
                 ]);
 
                 const [songInfo, playerInfo] = await Promise.all([songResponse.json(), playerResponse.json()]);
-                setImageUri(url);
-                setSongInfo(songInfo);
-                setSongDuration(Number(playerInfo.duration));
-                setRepeatState(playerInfo.repeat ? true : false);
-                setShuffleState(playerInfo.shuffle ? true : false);
-                setMuteState(playerInfo.mute ? true : false);
-                setVolumeState(Number(playerInfo.volume));
-                setPlayerState(playerInfo.state === 2 ? true : false);
+
+                if (isMounted) {
+                    setSongInfo(songInfo);
+                    setPlayer({
+                        duration: Number(playerInfo.duration),
+                        repeat: Boolean(playerInfo.repeat),
+                        shuffle: Boolean(playerInfo.shuffle),
+                        mute: Boolean(playerInfo.mute),
+                        volume: Number(playerInfo.volume),
+                        isPlaying: playerInfo.state === 2 ? true : false,
+                        position: Number(playerInfo.position || 0),
+                    });
+                    setImageUri(`${baseUrl}/track/cover?t=${Date.now()}`);
+                }
             } catch (error) {
                 showToast('Error player');
             } finally {
-                if(isMounted) setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
 
         songInformationAndCover();
         return () => {
             isMounted = false;
-        }
-    }, [actualServer]);
-
-    if (!isFocused) {
-        return null;
-    }
+        };
+    }, [actualServer, baseUrl, isLoaded]);
 
     if (loading) {
         return (
-            <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-                <ActivityIndicator color={Theme.colors.darkGray} size={'large'} />
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator
+                    color={Theme.colors.darkGray}
+                    size={'large'}
+                />
             </View>
         );
     }
@@ -297,7 +324,7 @@ export default function PlayerBottomSheet() {
                     style={{ flex: 1 }}
                     source={{ uri: imageUri }}
                     transition={250}
-                    cachePolicy={'none'}
+                    cachePolicy={'memory-disk'}
                 />
             </BlurTargetView>
             <BlurView
@@ -328,7 +355,7 @@ export default function PlayerBottomSheet() {
                                     style={{ width: '100%', height: '100%' }}
                                     transition={250}
                                     contentFit='cover'
-                                    cachePolicy={'memory'}
+                                    cachePolicy={'memory-disk'}
                                 />
                             )}
                         </View>
@@ -355,7 +382,7 @@ export default function PlayerBottomSheet() {
                     </View>
                     <View style={styles.controls}>
                         <View style={styles.playerExtraControls}>
-                            <Animated.View style={[styles.extraControlsWrapper, animatedSlider, { justifyContent: 'space-evenly', gap: 10 }]}>
+                            <Animated.View style={[styles.extraControlsWrapper, animatedSlider]}>
                                 <View style={{ flexDirection: 'column' }}>
                                     <IconButton
                                         onPress={() => handleShowSlider()}
@@ -367,7 +394,7 @@ export default function PlayerBottomSheet() {
                                                     size={24}
                                                     color='white'
                                                 />
-                                                <Text style={{ color: '#C6C6C6', fontFamily: 'MPLUS-Regular', fontSize: 10 }}>{volumeState}</Text>
+                                                <Text style={{ color: '#C6C6C6', fontFamily: 'MPLUS-Regular', fontSize: 10 }}>{player.volume}</Text>
                                             </>
                                         }
                                     />
@@ -380,7 +407,7 @@ export default function PlayerBottomSheet() {
                                     minimumTrackTintColor='#FFFFFF'
                                     maximumTrackTintColor='#C6C6C6'
                                     thumbTintColor='#FFFFFF'
-                                    value={volumeState}
+                                    value={player.volume}
                                     onValueChange={(e: any) => handleVolumeState(e)}
                                 />
                             </Animated.View>
@@ -389,19 +416,19 @@ export default function PlayerBottomSheet() {
                                     onPress={() => handleRepeatState()}
                                     IconSet={Ionicons}
                                     iconName='repeat'
-                                    iconColor={repeatState ? 'white' : '#8b8b8b'}
+                                    iconColor={player.repeat ? 'white' : '#8b8b8b'}
                                 />
                                 <IconButton
                                     onPress={() => handleShuffleState()}
                                     IconSet={Ionicons}
                                     iconName='shuffle'
-                                    iconColor={shuffleState ? 'white' : '#8b8b8b'}
+                                    iconColor={player.shuffle ? 'white' : '#8b8b8b'}
                                 />
                                 <IconButton
                                     onPress={() => handleMuteState()}
                                     IconSet={Ionicons}
                                     iconName='volume-mute-outline'
-                                    iconColor={muteState ? 'white' : '#8b8b8b'}
+                                    iconColor={player.mute ? 'white' : '#8b8b8b'}
                                 />
                                 <IconButton
                                     onPress={() => handleShowSlider()}
@@ -411,23 +438,23 @@ export default function PlayerBottomSheet() {
                             </Animated.View>
                         </View>
                         <View style={styles.playerSlider}>
-                            <Text style={styles.playerSliderTime}>{new Date(songPosition).toISOString().slice(14, 19)}</Text>
+                            <Text style={styles.playerSliderTime}>{formatTime(player.position)}</Text>
                             <Slider
                                 style={{ flex: 1 }}
                                 step={1}
                                 minimumValue={0}
-                                maximumValue={songDuration}
+                                maximumValue={player.duration}
                                 minimumTrackTintColor='#FFFFFF'
                                 maximumTrackTintColor='#C6C6C6'
                                 thumbTintColor='#FFFFFF'
-                                value={songPosition}
+                                value={player.position}
                                 onValueChange={(e: any) => handleSongPosition(e)}
                             />
-                            <Text style={styles.playerSliderTime}>{new Date(songDuration).toISOString().slice(14, 19)}</Text>
+                            <Text style={styles.playerSliderTime}>{formatTime(player.duration)}</Text>
                         </View>
                         <View style={styles.playerBasicControls}>
                             <IconButton
-                                onPress={() => handlePreviousTrack()}
+                                onPress={() => sendPlayerCommand('previous')}
                                 containerStyle={{ width: 80, height: 80 }}
                                 IconSet={Ionicons}
                                 iconName='play-skip-back'
@@ -437,11 +464,11 @@ export default function PlayerBottomSheet() {
                                 onPress={() => handlePause()}
                                 containerStyle={{ width: 80, height: 80, borderColor: '#FFF', borderWidth: 2 }}
                                 IconSet={MaterialCommunityIcons}
-                                iconName={playerState ? 'pause' : 'play'}
+                                iconName={player.isPlaying ? 'pause' : 'play'}
                                 iconSize={48}
                             />
                             <IconButton
-                                onPress={() => handleNextTrack()}
+                                onPress={() => sendPlayerCommand('next')}
                                 containerStyle={{ width: 80, height: 80 }}
                                 IconSet={Ionicons}
                                 iconName='play-skip-forward'
@@ -475,24 +502,7 @@ export default function PlayerBottomSheet() {
                         <View style={styles.extraInfoPlaySection}>
                             <Text style={styles.extraInfoTitle}>Rating</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                                <View style={{ flexDirection: 'row' }}>
-                                    {[...Array(songInfo.rating)].map((_, index) => (
-                                        <MaterialCommunityIcons
-                                            name='music-note-quarter'
-                                            size={24}
-                                            color='white'
-                                            key={`rating-music-note-${index}`}
-                                        />
-                                    ))}
-                                    {[...Array(5 - songInfo.rating)].map((_, index) => (
-                                        <MaterialCommunityIcons
-                                            name='music-note-half'
-                                            size={24}
-                                            color='#8B8B8B'
-                                            key={`rating-music-note-${index}`}
-                                        />
-                                    ))}
-                                </View>
+                                <RatingStars rating={songInfo.rating} />
                             </View>
                         </View>
                     </View>
@@ -611,7 +621,7 @@ const styles = StyleSheet.create({
     extraControlsWrapper: {
         position: 'absolute',
 
-        width: '100%',
+        width: '70%',
 
         flexDirection: 'row',
         alignItems: 'center',
