@@ -18,8 +18,8 @@ import {
 import { background, clip, fillMaxWidth, height, padding, Shapes, width } from '@expo/ui/jetpack-compose/modifiers';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { ComponentProps, memo, useEffect, useRef, useState } from 'react';
-import { BackHandler, ScrollView, StyleSheet, Text, TextInput, ToastAndroid, View } from 'react-native';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { BackHandler, ScrollView, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ServerListElementProps {
@@ -30,7 +30,7 @@ interface ServerListElementProps {
     rightAction: (value: number) => void;
 }
 
-const ServerListElement = memo(function ServerListElement({ actualServer, index, item, leftAction, rightAction }: ServerListElementProps) {
+const ServerListElement = memo(({ actualServer, index, item, leftAction, rightAction }: ServerListElementProps) => {
     const [visible, setVisible] = useState(false);
     const sheetRef = useRef<ModalBottomSheetRef>(null);
     const isCurrentServer = item.ip === actualServer.ip;
@@ -43,7 +43,7 @@ const ServerListElement = memo(function ServerListElement({ actualServer, index,
                 InsideElement={
                     <View style={styles.serverElementContainer}>
                         <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{gap: 2}}>
+                            <View style={{ gap: 2 }}>
                                 <Text style={[styles.text, styles.subtitle]}>{item.name}</Text>
                                 <Text style={[styles.text, { color: Theme.colors.gray }]}>{item.ip}</Text>
                             </View>
@@ -126,13 +126,17 @@ export default function Preferences() {
     const params = useLocalSearchParams<{ ip: string }>();
     const { actualServer, setActualServer, serverList, setServerList } = useSettings();
 
-    const showToast = (message: string) => {
+    const showToast = useCallback((message: string) => {
         ToastAndroid.show(message, ToastAndroid.SHORT);
-    };
+    }, []);
 
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         router.dismissTo('/(tabs)/(settings)');
-    };
+    }, [router]);
+
+    const handleScan = useCallback(() => {
+        router.navigate('/(tabs)/(settings)/scan');
+    }, [router]);
 
     const handleSave = async () => {
         if (!serverIp || !serverName) {
@@ -161,44 +165,47 @@ export default function Preferences() {
         }
 
         setActualServer({ ip: serverIp, name: serverName });
-        setServerList((prevList) => {
-            const currentList = Array.isArray(prevList) ? prevList : [];
-            return [...currentList, { ip: serverIp, name: serverName }];
-        });
+        setServerList((prevList) => [...(Array.isArray(prevList) ? prevList : []), { ip: serverIp, name: serverName }]);
         setServerIp('');
         setServerName('');
         showToast('Server verified and added successfully!');
     };
 
-    const handleDeleteSavedServer = (ip: string) => {
-        setServerList((prev) => prev.filter((item) => item.ip !== ip));
-        if (ip === actualServer.ip) {
-            setActualServer({ ip: '127.0.0.1', name: 'PC' });
-        }
-    };
+    const handleDeleteSavedServer = useCallback(
+        (ip: string) => {
+            setServerList((prev) => prev.filter((item) => item.ip !== ip));
+            if (ip === actualServer.ip) {
+                setActualServer({ ip: '127.0.0.1', name: 'PC' });
+            }
+        },
+        [actualServer.ip],
+    );
 
-    const handleToggleConnection = (index: number) => {
-        const selectedItem = serverList.at(index);
+    const handleToggleConnection = useCallback(
+        (index: number) => {
+            const selectedItem = serverList.at(index);
 
-        if (!selectedItem) return;
+            if (!selectedItem) return;
 
-        if (selectedItem?.ip === actualServer.ip) {
-            setActualServer({ ip: '127.0.0.1', name: 'PC' });
-        } else {
-            setActualServer({ ip: selectedItem.ip, name: selectedItem.name });
-        }
-    };
+            if (selectedItem?.ip === actualServer.ip) {
+                setActualServer({ ip: '127.0.0.1', name: 'PC' });
+            } else {
+                setActualServer({ ip: selectedItem.ip, name: selectedItem.name });
+            }
+        },
+        [actualServer.ip],
+    );
 
     useEffect(() => {
         const onBackPress = () => {
-            router.dismissTo('/(tabs)/(settings)');
+            handleBack();
             return true;
         };
 
         const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
 
         return () => subscription.remove();
-    }, [router]);
+    }, [handleBack]);
 
     useEffect(() => {
         if (params.ip) {
@@ -238,17 +245,17 @@ export default function Preferences() {
                                 inputProps={{ maxLength: 20, autoCapitalize: 'words' }}
                                 keyboardType='default'
                                 placeholder='Server Name'
-                                setValue={(newText) => setServerName(newText)}
+                                setValue={setServerName}
                                 value={serverName}
                             />
                         </View>
                         <View style={styles.sectionButtons}>
                             <IconButton
-                                onPress={() => router.navigate('/(tabs)/(settings)/scan')}
+                                onPress={handleScan}
                                 IconSet={Ionicons}
                                 iconName='qr-code'
                                 containerStyle={{
-                                    width: 'auto',
+                                    width: '100%',
                                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
                                     borderWidth: 1,
                                     borderColor: Theme.colors.gray,
@@ -262,7 +269,7 @@ export default function Preferences() {
                                 IconSet={Ionicons}
                                 iconName='save'
                                 containerStyle={{
-                                    width: 'auto',
+                                    width: '100%',
                                     backgroundColor: `${Theme.colors.accent}33`,
                                     borderWidth: 1,
                                     borderColor: Theme.colors.accent,
@@ -280,7 +287,7 @@ export default function Preferences() {
                                     actualServer={actualServer}
                                     index={index}
                                     item={item}
-                                    key={`${index}-saved-server`}
+                                    key={item.ip}
                                     leftAction={() => handleDeleteSavedServer(item.ip)}
                                     rightAction={() => handleToggleConnection(index)}
                                 />
@@ -335,7 +342,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     sectionButtons: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 20,

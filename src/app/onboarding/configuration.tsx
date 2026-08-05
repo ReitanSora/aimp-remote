@@ -6,7 +6,7 @@ import { checkServer, isValidIPv4 } from '@/utils/validation';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -50,7 +50,7 @@ function ScanFrame({ onBarCodeScanned }: ScanFrameProps) {
                         borderColor: Theme.colors.accent,
                     }}
                     insideStyle={{ paddingHorizontal: 20, gap: 10 }}
-                    InsideElement={<Text style={[styles.subtitle, {color: Theme.colors.white}]}>Grant Permission</Text>}
+                    InsideElement={<Text style={[styles.subtitle, { color: Theme.colors.white }]}>Grant Permission</Text>}
                 />
             </View>
         );
@@ -76,9 +76,9 @@ export default function Configuration() {
     const insets = useSafeAreaInsets();
     const { setActualServer, setServerList } = useSettings();
 
-    const showToast = (message: string) => {
+    const showToast = useCallback((message: string) => {
         ToastAndroid.show(message, ToastAndroid.SHORT);
-    };
+    }, []);
 
     const handleSave = async () => {
         if (!serverIp || !serverName) {
@@ -107,14 +107,17 @@ export default function Configuration() {
         setServerIp('');
         setServerName('');
         showToast('Server verified and added successfully!');
-        router.navigate('/onboarding/success')
+        router.navigate('/onboarding/success');
     };
 
-    const handleScan = (data: string) => {
-        setServerIp(data.split('?ip=')[1])
-        setScanVisible(!scanVisible)
-        showToast('Successfully scanned, IP address filled in');
-    };
+    const handleScan = useCallback(
+        (data: string) => {
+            setServerIp(data.split('?ip=')[1]);
+            setScanVisible(!scanVisible);
+            showToast('Successfully scanned, IP address filled in');
+        },
+        [scanVisible, showToast],
+    );
 
     return (
         <View style={styles.container}>
