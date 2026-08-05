@@ -1,6 +1,6 @@
 import { MAX_WIDTH } from '@/constants';
-import { useSettings } from '@/context/appContext';
-import { useAIMP } from '@/hooks/useAIMP';
+import { useSettings } from '@/context/AppContext';
+import { useAIMP } from '@/hooks/useAimp';
 import { Theme } from '@/theme';
 import { Songs } from '@/types/songs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';

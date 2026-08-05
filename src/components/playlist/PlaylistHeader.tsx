@@ -1,4 +1,4 @@
-import { useSettings } from '@/context/appContext';
+import { useSettings } from '@/context/AppContext';
 import { Theme } from '@/theme';
 import { PlaylistDetailsHeader } from '@/types/playlists';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
