@@ -5,9 +5,9 @@ import { Theme } from '@/theme';
 import { Songs } from '@/types/songs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, ToastAndroid, View } from 'react-native';
-import Animated, { Extrapolation, interpolate, useAnimatedProps, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Extrapolation, interpolate, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import IconButton from '../ui/IconButton';
 
@@ -35,49 +35,55 @@ const noServer: Songs = {
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
+const CIRCUMFERENCE = 157;
+const CIRCLE_RADIUS = 25;
+const CIRCLE_CX = 40;
+const CIRCLE_CY = 35;
+
 export default function TogglePlayer() {
     const [songInfo, setSongInfo] = useState<Songs>(defaultSong);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [songDuration, setSongDuration] = useState<number>(0);
+
     const { aimpEvent } = useAIMP();
     const router = useRouter();
     const { actualServer, isLoaded } = useSettings();
-    const progress = useSharedValue(0);
-    const enableButton = actualServer.ip === '127.0.0.1' ? false : true;
 
-    const handlePlayerVisible = () => {
-        router.navigate('/(home)/player');
-    };
+    const progress = useSharedValue(0);
+    const enableButton = useMemo(() => actualServer.ip !== '127.0.0.1', [actualServer.ip]);
+
+    const handlePlayerVisible = useCallback(() => {
+        router.navigate('/(tabs)/(home)/player');
+    }, [router]);
 
     const showToast = (message: string) => {
         ToastAndroid.show(message, ToastAndroid.SHORT);
     };
 
-    const handlePause = async () => {
+    const handlePause = useCallback(async () => {
+        if (!enableButton) return;
         try {
             const response = await fetch(`http://${actualServer.ip}:3553/player/playpause`, {
                 method: 'POST',
             });
-            await response.json();
-            setIsPlaying(!isPlaying);
+            if (response.ok) {
+                setIsPlaying(!isPlaying);
+            }
         } catch {
             showToast('Error toggle set play/pause');
         }
-    };
+    }, [actualServer.ip, isPlaying]);
 
     useEffect(() => {
-        if (aimpEvent.playerState === null) return;
-        if (aimpEvent.playerState === 2) setIsPlaying(true);
-        if (aimpEvent.playerState !== 2) setIsPlaying(false);
+        if (aimpEvent.playerState !== null) {
+            setIsPlaying(aimpEvent.playerState === 2? true: false);
+        }
     }, [aimpEvent.playerState]);
 
-    const mappedValue = useDerivedValue(() => {
-        return ~~interpolate(progress.value, [0, songDuration], [0, 156], Extrapolation.CLAMP);
+    const animatedProps = useAnimatedProps(() => {
+        const strokeDashoffset = interpolate(progress.value, [0, songDuration || 1], [CIRCUMFERENCE, 0], Extrapolation.CLAMP);
+        return { strokeDashoffset };
     }, [songDuration]);
-
-    const animatedProps = useAnimatedProps(() => ({
-        strokeDashoffset: 156 - mappedValue.value,
-    }));
 
     useEffect(() => {
         progress.value = withTiming(aimpEvent.position);
@@ -102,6 +108,11 @@ export default function TogglePlayer() {
     useEffect(() => {
         if (!isLoaded) return;
 
+        if (!enableButton) {
+            setSongInfo(noServer);
+            return;
+        }
+
         const toggleInfo = async () => {
             try {
                 if (actualServer.ip === '127.0.0.1') {
@@ -125,7 +136,7 @@ export default function TogglePlayer() {
         };
 
         toggleInfo();
-    }, [actualServer]);
+    }, [actualServer.ip, isLoaded, enableButton]);
 
     return (
         <View style={[styles.playerToggle]}>
@@ -139,16 +150,16 @@ export default function TogglePlayer() {
                             height='80'
                             width='65'>
                             <AnimatedCircle
-                                cx={40}
-                                cy={35}
-                                r={25}
+                                cx={CIRCLE_CX}
+                                cy={CIRCLE_CY}
+                                r={CIRCLE_RADIUS}
                                 stroke={Theme.colors.accent}
                                 strokeWidth={5}
                                 fill={'transparent'}
                                 strokeDasharray={156}
                                 animatedProps={animatedProps}
                                 strokeLinecap={'round'}
-                                transform={'rotate(-90, 40, 40)'}
+                                transform={`rotate(-90, ${CIRCLE_CX}, ${CIRCLE_CX})`}
                             />
                         </Svg>
                         <IconButton

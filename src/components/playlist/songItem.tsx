@@ -2,9 +2,10 @@ import { Theme } from '@/theme';
 import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import IconButton from '../ui/IconButton';
+import { PlaylistItem } from '@/types/playlists';
 
 interface SongItemProps {
-    item: object | any;
+    item: PlaylistItem;
     onPress: () => void;
 }
 
