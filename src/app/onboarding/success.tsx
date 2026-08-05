@@ -1,5 +1,5 @@
 import IconButton from '@/components/ui/IconButton';
-import { useSettings } from '@/context/appContext';
+import { useSettings } from '@/context/AppContext';
 import { Theme } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';

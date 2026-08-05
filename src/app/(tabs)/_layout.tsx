@@ -1,4 +1,4 @@
-import TogglePlayer from '@/components/playlist/togglePlayer';
+import TogglePlayer from '@/components/ui/TogglePlayer';
 import { Theme } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useSegments } from 'expo-router';

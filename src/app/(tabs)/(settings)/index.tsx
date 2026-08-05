@@ -4,10 +4,9 @@ import { Theme } from '@/theme';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { StyleSheet, Text, ToastAndroid, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSettings } from '@/context/appContext';
 
 interface OptionInsideElementProps {
     optionTitle: string;

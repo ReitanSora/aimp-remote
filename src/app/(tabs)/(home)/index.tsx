@@ -1,6 +1,6 @@
 import SearchHeader from '@/components/ui/Header';
 import IconButton from '@/components/ui/IconButton';
-import { useSettings } from '@/context/appContext';
+import { useSettings } from '@/context/AppContext';
 import { Theme } from '@/theme';
 import { Playlists } from '@/types/playlists';
 import { Image } from 'expo-image';

@@ -1,4 +1,4 @@
-import { useSettings } from '@/context/appContext';
+import { useSettings } from '@/context/AppContext';
 import { useEffect, useState } from 'react';
 import { ToastAndroid } from 'react-native';
 

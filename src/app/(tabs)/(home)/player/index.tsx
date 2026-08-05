@@ -1,8 +1,7 @@
-import { useAIMP } from '@/hooks/useAIMP';
-// import { useAppState } from '@/hooks/useAppState';
+import { useAIMP } from '@/hooks/useAimp';
 import IconButton from '@/components/ui/IconButton';
 import { MAX_HEIGHT } from '@/constants';
-import { useSettings } from '@/context/appContext';
+import { useSettings } from '@/context/AppContext';
 import { Theme } from '@/theme';
 import { Songs } from '@/types/songs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';

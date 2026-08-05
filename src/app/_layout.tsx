@@ -1,4 +1,4 @@
-import { SettingsProvider, useSettings } from '@/context/appContext';
+import { SettingsProvider, useSettings } from '@/context/AppContext';
 import { Theme } from '@/theme';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';

@@ -1,7 +1,7 @@
 import PlaylistHeader from '@/components/playlist/PlaylistHeader';
-import { SongItem } from '@/components/playlist/songItem';
+import { SongItem } from '@/components/playlist/SongItem';
 import SearchHeader from '@/components/ui/Header';
-import { useSettings } from '@/context/appContext';
+import { useSettings } from '@/context/AppContext';
 import { Theme } from '@/theme';
 import { PlaylistInfo, PlaylistItem, PlaylistStats } from '@/types/playlists';
 import { useLocalSearchParams, useRouter } from 'expo-router';

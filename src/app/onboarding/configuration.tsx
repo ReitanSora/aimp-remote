@@ -1,6 +1,6 @@
 import Input from '@/components/settings/Input';
 import IconButton from '@/components/ui/IconButton';
-import { useSettings } from '@/context/appContext';
+import { useSettings } from '@/context/AppContext';
 import { Theme } from '@/theme';
 import { checkServer, isValidIPv4 } from '@/utils/validation';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
