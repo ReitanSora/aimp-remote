@@ -5,12 +5,51 @@ import { Theme } from '@/theme';
 import { Playlists } from '@/types/playlists';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, RefreshControl, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface PlaylistsWithImage extends Playlists {
     imageUrl: string;
+}
+
+interface PlaylistItemProps {
+    actualServerIp: string;
+    item: PlaylistsWithImage;
+    onPress: (value: string) => void;
+}
+
+function PlaylistItem({ actualServerIp, item, onPress }: PlaylistItemProps) {
+    const imageSource = useMemo(
+        () => ({
+            uri: `http://${actualServerIp}:3553/playlist/cover?id=${item.id}`,
+        }),
+        [actualServerIp, item.id],
+    );
+
+    return (
+        <IconButton
+            onPress={() => onPress(item.id)}
+            containerStyle={{ flex: 1, height: 'auto', borderRadius: 20 }}
+            insideStyle={{ backgroundColor: Theme.colors.lightBlack }}
+            InsideElement={
+                <View style={[styles.playlistItemInside]}>
+                    <Image
+                        source={imageSource}
+                        style={{ width: '100%', height: 150, borderRadius: 10 }}
+                        transition={200}
+                        contentFit='cover'
+                        cachePolicy={'disk'}
+                        recyclingKey={item.id}
+                    />
+                    <View style={{ gap: 5 }}>
+                        <Text style={[styles.text, { fontFamily: 'MPLUS-Bold', fontSize: Theme.fontSize.subtitle }]}>{item.name}</Text>
+                        <Text style={[styles.text, { fontSize: Theme.fontSize.paragraph }]}>{item.itemCount} songs</Text>
+                    </View>
+                </View>
+            }
+        />
+    );
 }
 
 export default function Home() {
@@ -20,23 +59,10 @@ export default function Home() {
     const [refreshing, setRefreshing] = useState<boolean>(false);
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { actualServer, isOnboarded } = useSettings();
+    const { actualServer } = useSettings();
 
     const showToast = (message: string) => {
         ToastAndroid.show(message, ToastAndroid.SHORT);
-    };
-
-    const formatData = (data: Array<PlaylistsWithImage>, columns: number) => {
-        const numberOfFullRows = Math.floor(data.length / columns);
-        let numberOfElementsLastRow = data.length - numberOfFullRows * columns;
-        let dataFormatted: Array<object> = data;
-
-        while (numberOfElementsLastRow !== columns && numberOfElementsLastRow !== 0) {
-            dataFormatted.push({ empty: true });
-            numberOfElementsLastRow++;
-        }
-
-        return dataFormatted;
     };
 
     const filteredData = useMemo(() => {
@@ -62,6 +88,21 @@ export default function Home() {
         }
     }, [actualServer]);
 
+    const handlePress = useCallback((id: string) => {
+        router.navigate({ pathname: '/(tabs)/(home)/playlist/[id]', params: { id: id } });
+    }, []);
+
+    const renderItem = useCallback(
+        ({ item }: { item: PlaylistsWithImage }) => (
+            <PlaylistItem
+                item={item}
+                actualServerIp={actualServer.ip}
+                onPress={handlePress}
+            />
+        ),
+        [actualServer, handlePress],
+    );
+
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await getPlaylists();
@@ -73,14 +114,6 @@ export default function Home() {
             onRefresh();
         }, [onRefresh]),
     );
-
-    useEffect(() => {
-        const check = () => {
-            if (isOnboarded) {
-                console.log('No');
-            }
-        };
-    }, []);
 
     return (
         <KeyboardAvoidingView
@@ -114,32 +147,7 @@ export default function Home() {
                             progressBackgroundColor={Theme.colors.accent}
                         />
                     }
-                    renderItem={({ item, index }) => {
-                        return (
-                            <IconButton
-                                onPress={() => router.navigate({ pathname: '/(tabs)/(home)/playlist/[id]', params: { id: item.id } })}
-                                containerStyle={{ flex: 1, height: 'auto', borderRadius: 20 }}
-                                insideStyle={{ backgroundColor: Theme.colors.lightBlack }}
-                                InsideElement={
-                                    <View style={[styles.playlistItemInside]}>
-                                        <Image
-                                            source={`http://${actualServer.ip}:3553/playlist/cover?id=${item.id}`}
-                                            style={{ width: '100%', height: 150, borderRadius: 10 }}
-                                            transition={200}
-                                            contentFit='cover'
-                                            cachePolicy={'none'}
-                                        />
-                                        <View style={{ gap: 5 }}>
-                                            <Text style={[styles.text, { fontFamily: 'MPLUS-Bold', fontSize: Theme.fontSize.subtitle }]}>
-                                                {item.name}
-                                            </Text>
-                                            <Text style={[styles.text, { fontSize: Theme.fontSize.paragraph }]}>{item.itemCount} songs</Text>
-                                        </View>
-                                    </View>
-                                }
-                            />
-                        );
-                    }}
+                    renderItem={renderItem}
                 />
             )}
         </KeyboardAvoidingView>
