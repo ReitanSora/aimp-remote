@@ -18,7 +18,11 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.reitansora.fluke",
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.CAMERA"
+      ]
     },
     "primaryColor": "#FFFFFF",
     "web": {
@@ -75,14 +79,14 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "cca8de19-da90-4dff-bdec-f261cd0abbda"
+        "projectId": "89e0595b-e89f-4aa8-997a-74563f7d936c"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/cca8de19-da90-4dff-bdec-f261cd0abbda"
+      "url": "https://u.expo.dev/89e0595b-e89f-4aa8-997a-74563f7d936c"
     }
   }
 }
