@@ -89,7 +89,7 @@ function PlaylistHeader({ playlistInfo, playlistStats, setHeaderHeight = () => {
                     style={{ flex: 1 }}
                     source={imageSource}
                     transition={250}
-                    cachePolicy={'disk'}
+                    cachePolicy={'memory'}
                     recyclingKey={`bg-${playlistInfo?.id}`}
                 />
             </BlurTargetView>
@@ -106,7 +106,7 @@ function PlaylistHeader({ playlistInfo, playlistStats, setHeaderHeight = () => {
                     style={{ width: '100%', height: '100%' }}
                     contentFit='contain'
                     transition={250}
-                    cachePolicy={'disk'}
+                    cachePolicy={'memory'}
                     recyclingKey={`cover-${playlistInfo?.id}`}
                 />
             </View>

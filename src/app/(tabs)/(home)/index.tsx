@@ -39,7 +39,7 @@ function PlaylistItem({ actualServerIp, item, onPress }: PlaylistItemProps) {
                         style={{ width: '100%', height: 150, borderRadius: 10 }}
                         transition={200}
                         contentFit='cover'
-                        cachePolicy={'disk'}
+                        cachePolicy={'memory'}
                         recyclingKey={item.id}
                     />
                     <View style={{ gap: 5 }}>
