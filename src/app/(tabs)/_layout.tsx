@@ -2,16 +2,17 @@ import TogglePlayer from '@/components/ui/TogglePlayer';
 import { Theme } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useSegments } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabsLayout() {
     const segment = useSegments();
+    const insets = useSafeAreaInsets();
     const page = segment[segment.length - 1];
     const pagesToHideTabBar = ['player', 'songDetails', 'about', 'preferences', 'scan'];
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, paddingBottom: insets.bottom }}>
             <Tabs
                 screenOptions={{
                     tabBarStyle: {
