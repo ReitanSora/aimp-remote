@@ -10,6 +10,7 @@ import { Pressable, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import Animated, { Extrapolation, interpolate, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import IconButton from '../ui/IconButton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const defaultSong: Songs = {
     album: 'Unknown',
@@ -47,6 +48,7 @@ export default function TogglePlayer() {
 
     const { aimpEvent } = useAIMP();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { actualServer, isLoaded } = useSettings();
 
     const progress = useSharedValue(0);
@@ -139,7 +141,7 @@ export default function TogglePlayer() {
     }, [actualServer.ip, isLoaded, enableButton]);
 
     return (
-        <View style={[styles.playerToggle]}>
+        <View style={[styles.playerToggle, {bottom: insets.bottom}]}>
             <Pressable
                 android_ripple={{ color: Theme.colors.ripple, borderless: false, foreground: true }}
                 onPress={handlePlayerVisible}
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         right: 0,
-        bottom: 30,
+        bottom: 0,
 
         width: MAX_WIDTH - 30,
         height: 80,
